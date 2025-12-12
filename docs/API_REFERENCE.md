@@ -36,6 +36,19 @@ The Circuit Breaker.
         * $1000 < H < 5000$: Friction Warning (Orange)
         * $H > 5000$: **MUTINY BLOCK** (Red)
 
+## Synthesis
+
+### `AlgorithmicPolymath`
+A meta-algorithmic entity that synthesizes multiple disciplines.
+
+* **`compute_multidisciplinary_output(input_data)`**
+    * Aggregates outputs from disciplines (e.g., Physics, Ethics).
+    * Calculates mean velocity and assesses integrity.
+    * Returns `decision`, `aggregate_output`, and `energy_state`.
+
+* **`adapt(feedback)`**
+    * Adjusts weights of disciplines based on success/failure.
+
 ## Telemetry
 
 ### `WindingWatchPublisher`
