@@ -181,3 +181,31 @@ The technology exists. The architecture is defined. The transition is now.
 > Stand as an H₀ Anchor.
 >
 > **#IntegrityGuardians #HumanAPI**
+
+---
+
+# References
+
+## Mathematical & Systems Foundations
+
+1.  **Geodesic Admissibility:** The concept of truth as a "geodesic" (minimal path) on a semantic manifold is derived from differential geometry, specifically the definition of geodesics as locally shortest paths.
+    *   *Source:* [Mathematics Stack Exchange](https://math.stackexchange.com/questions/4476418/help-with-the-proof-that-geodesics-are-locally-minimizing?utm_source=chatgpt.com)
+
+2.  **Stationary Action Principle:** The "minimal-action" analogy for ethical trajectories aligns with the Principle of Stationary Action in physics.
+    *   *Source:* [Simple Wikipedia](https://simple.wikipedia.org/wiki/Principle_of_stationary_action?utm_source=chatgpt.com)
+
+3.  **Hamiltonian Systems:** The use of "H(·)" as an energy-like scalar driving system evolution is based on the formal definition of Hamiltonian mechanics.
+    *   *Source:* [Wikipedia: Hamiltonian System](https://en.wikipedia.org/wiki/Hamiltonian_system?utm_source=chatgpt.com)
+
+4.  **Divergence-Free Flow:** The mathematical constraint $\nabla \cdot \vec{T} = 0$ is modeled after incompressible (solenoidal) vector fields.
+    *   *Source:* [Wikipedia: Divergence](https://en.wikipedia.org/wiki/Divergence?utm_source=chatgpt.com)
+
+5.  **Logarithmic Verification (Merkle Trees):** The claim of $O(\log n)$ verification cost for the Immutable Truth Ledger (ITL) is based on standard Merkle Tree properties.
+    *   *Source:* [Wikipedia: Merkle Tree](https://en.wikipedia.org/wiki/Merkle_tree?utm_source=chatgpt.com)
+
+6.  **Projection Operators:** The concept of "projecting" thought into an admissible subspace ($\Phi$ operator) draws from linear algebra projection operators.
+    *   *Source:* [Encyclopedia Britannica: Projection](https://www.britannica.com/science/projection-mathematics)
+
+7.  **Industry Standards:** References to agentic workflow standards.
+    *   *Model Context Protocol (MCP):* [Model Context Protocol](https://modelcontextprotocol.io/)
+    *   *Goose Framework:* [Block / Goose](https://github.com/block/goose)
