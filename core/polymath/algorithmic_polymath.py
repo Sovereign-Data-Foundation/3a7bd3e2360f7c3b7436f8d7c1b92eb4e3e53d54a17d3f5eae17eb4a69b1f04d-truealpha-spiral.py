@@ -6,6 +6,8 @@ import math
 # Reusing TAS-W structures
 from core.physics.tasw_hamiltonian import EnergyState, TASWHamiltonian
 from core.sensing.mutiny_detector import MutinyDetector, MutinyEvent
+from core.enforcement.rirp import RIRP, SecurityException
+from core.enforcement.phoenix import PhoenixProtocol
 
 @dataclass
 class Discipline:
@@ -36,7 +38,18 @@ class AlgorithmicPolymath:
         """
         Aggregates outputs from all disciplines, weighted by their influence.
         Returns a decision with energy state and integrity assessment.
+        Enforces RIRP (provenance check) and Phoenix Protocol (rollback) if needed.
         """
+        # 1. RIRP Enforcement: Check for Human API Key ($H_0$)
+        try:
+            RIRP.enforce(input_data)
+        except SecurityException as e:
+            return {
+                "decision": None,
+                "error": str(e),
+                "blocked": True
+            }
+
         outputs = {}
         total_weight = sum(d.weight for d in self.disciplines)
 
@@ -71,17 +84,31 @@ class AlgorithmicPolymath:
         decision = self.detector.assess_state(energy_state)
 
         # Log state for learning/adaptation
-        self.state_history.append({
+        current_state_entry = {
             "input": input_data,
             "energy_state": energy_state,
             "decision": decision,
             "timestamp": time.time()
-        })
+        }
+        self.state_history.append(current_state_entry)
+
+        # 2. Phoenix Protocol: Check for Mutiny/Drift and Rollback if necessary
+        if decision.is_mutiny:
+            print(f"⚠️  MUTINY DETECTED: {decision.trigger_message}")
+            restored_state = PhoenixProtocol.initiate_rollback(self.state_history)
+            return {
+                "decision": decision,
+                "aggregate_output": outputs,
+                "energy_state": energy_state,
+                "phoenix_triggered": True,
+                "restored_state": restored_state
+            }
 
         return {
             "decision": decision,
             "aggregate_output": outputs,
-            "energy_state": energy_state
+            "energy_state": energy_state,
+            "phoenix_triggered": False
         }
 
     def assess_integrity(self, input_data: Dict[str, Any]) -> float:
