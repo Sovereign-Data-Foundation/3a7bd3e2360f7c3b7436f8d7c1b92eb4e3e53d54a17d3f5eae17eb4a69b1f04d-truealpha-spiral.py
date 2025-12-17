@@ -1,5 +1,7 @@
 # TAS-W API Reference
 
+**TAS_DNA Provenance:** 950d2178a8cce268ea10f506530fa15c50a19b8bdf6d0d68d3bba4e72cbad833dfcbf06e8d4c279dd499620cf28ecd6dcf9ec74041379cf914aa15e201be6be6
+
 ## Core Physics
 
 ### `TASWHamiltonian`

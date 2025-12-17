@@ -12,6 +12,7 @@ class EnergyState:
 class TASWHamiltonian:
     """
     The calculation engine for Constitutional Energy.
+    TAS_DNA Provenance: d22638aa60f230017b2c15a905f8ff0101dbd4dc99af6387358606da06d371f0087795b0177d8f8b4246f3b401008407e0e98b9cbb5c96357a1ed855db217dca
     """
     def compute_energy(self, integrity_score: float, velocity: float) -> EnergyState:
         """

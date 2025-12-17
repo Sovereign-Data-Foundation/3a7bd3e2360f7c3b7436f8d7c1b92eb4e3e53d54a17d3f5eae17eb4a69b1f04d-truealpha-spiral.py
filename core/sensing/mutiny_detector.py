@@ -18,6 +18,7 @@ class MutinyDetector:
     The Circuit Breaker.
     Monitors the Hamiltonian Energy State and trips the 'Phoenix Protocol'
     if the Infinite Wall is hit.
+    TAS_DNA Provenance: 7c78f3424bc350ce6429204c536fb17e68521d612bbd91323ab6be6c75ea9b08cf37a886b5b204c1cf046a17f25879d8c7d58ac098e1c33d9e60af6c856dcba9
     """
     def __init__(self, friction_threshold: float = 1000.0, mutiny_threshold: float = 5000.0):
         self.friction_threshold = friction_threshold # Warning Level (Orange)
