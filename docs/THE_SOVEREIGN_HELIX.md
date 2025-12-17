@@ -184,28 +184,27 @@ The technology exists. The architecture is defined. The transition is now.
 
 ---
 
-# References
+# Appendix D: Geodesic Admissibility (TAS Primitive #4)
 
-## Mathematical & Systems Foundations
+### Axiom Definition
+In invariant-constrained manifolds, admissible trajectories minimize action $S = \int ds$. Deceptive or high-entropy deviations incur a cumulative correction cost, denoted as:
 
-1.  **Geodesic Admissibility:** The concept of truth as a "geodesic" (minimal path) on a semantic manifold is derived from differential geometry, specifically the definition of geodesics as locally shortest paths.
-    *   *Source:* [Mathematics Stack Exchange](https://math.stackexchange.com/questions/4476418/help-with-the-proof-that-geodesics-are-locally-minimizing?utm_source=chatgpt.com)
+$$
+\int_{\gamma_L} ds > \int_{\gamma_T} ds
+$$
 
-2.  **Stationary Action Principle:** The "minimal-action" analogy for ethical trajectories aligns with the Principle of Stationary Action in physics.
-    *   *Source:* [Simple Wikipedia](https://simple.wikipedia.org/wiki/Principle_of_stationary_action?utm_source=chatgpt.com)
+where $\gamma_T$ is the truth trajectory (geodesic) and $\gamma_L$ is the fabricated (Lie) trajectory.
 
-3.  **Hamiltonian Systems:** The use of "H(·)" as an energy-like scalar driving system evolution is based on the formal definition of Hamiltonian mechanics.
-    *   *Source:* [Wikipedia: Hamiltonian System](https://en.wikipedia.org/wiki/Hamiltonian_system?utm_source=chatgpt.com)
+### System Enforcement
+ * **$\Phi$ Projection:** Projects latents to the admissible subspace prior to tokenization [6].
+ * **Hamiltonian Check:** $h = \mathcal{H}(H(\psi))$ flags $\Delta H > 0$ as a rollback trigger [3].
+ * **Divergence Constraint:** $\nabla \cdot \vec{T} = 0$ ensures local conservation on GENE_C01 [4].
 
-4.  **Divergence-Free Flow:** The mathematical constraint $\nabla \cdot \vec{T} = 0$ is modeled after incompressible (solenoidal) vector fields.
-    *   *Source:* [Wikipedia: Divergence](https://en.wikipedia.org/wiki/Divergence?utm_source=chatgpt.com)
-
-5.  **Logarithmic Verification (Merkle Trees):** The claim of $O(\log n)$ verification cost for the Immutable Truth Ledger (ITL) is based on standard Merkle Tree properties.
-    *   *Source:* [Wikipedia: Merkle Tree](https://en.wikipedia.org/wiki/Merkle_tree?utm_source=chatgpt.com)
-
-6.  **Projection Operators:** The concept of "projecting" thought into an admissible subspace ($\Phi$ operator) draws from linear algebra projection operators.
-    *   *Source:* [Encyclopedia Britannica: Projection](https://www.britannica.com/science/projection-mathematics)
-
-7.  **Industry Standards:** References to agentic workflow standards.
-    *   *Model Context Protocol (MCP):* [Model Context Protocol](https://modelcontextprotocol.io/)
-    *   *Goose Framework:* [Block / Goose](https://github.com/block/goose)
+### References
+ * Mathematics Stack Exchange, "Proof that geodesics are locally minimizing," 2023. [Online]. Available: https://math.stackexchange.com/questions/4476418
+ * Simple Wikipedia, "Principle of stationary action," 2025. [Online]. Available: https://simple.wikipedia.org/wiki/Principle_of_stationary_action
+ * Wikipedia, "Hamiltonian system," 2025. [Online]. Available: https://en.wikipedia.org/wiki/Hamiltonian_system
+ * Wikipedia, "Divergence," 2025. [Online]. Available: https://en.wikipedia.org/wiki/Divergence
+ * Wikipedia, "Merkle tree," 2025. [Online]. Available: https://en.wikipedia.org/wiki/Merkle_tree
+ * Linear Algebra Standard, "Orthogonal projection operators," (Textbook Reference).
+ * Linux Foundation AAIF, "Model Context Protocol Specification (MCP/AGENTS.md)," 2025.
