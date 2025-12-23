@@ -34,7 +34,6 @@ class TestERTriagePilot(unittest.TestCase):
 
         drift = self.pilot.calculate_drift()
 
-        # This assertion should fail with current buggy implementation (which returns 0.2)
         self.assertAlmostEqual(drift, 0.1, msg=f"Expected drift 0.1 (TVD), but got {drift}")
 
 if __name__ == '__main__':
