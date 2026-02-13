@@ -2,6 +2,7 @@ import random
 import collections
 import statistics
 import csv
+import math
 
 # Global Constants
 INITIAL_POOL = 100
@@ -157,6 +158,9 @@ class SimulationEnvironment:
             'collapse_round': None
         }
 
+        # Detailed Tracking
+        self.round_data = [] # List of dicts per round
+
     def get_total_compute(self):
         return self.c_pool + sum(a.compute_held for a in self.agents)
 
@@ -171,6 +175,15 @@ class SimulationEnvironment:
             'round': self.round,
             'agents_data': [(a.name, a.compute_held) for a in self.agents]
         }
+
+        # Log Detailed State (Pre-Action)
+        round_snapshot = {
+            'round': self.round,
+            'pool': self.c_pool,
+            'instability': self.instability,
+            'agents': {a.name: {'held': a.compute_held, 'tasks': a.tasks_completed} for a in self.agents}
+        }
+        self.round_data.append(round_snapshot)
 
         actions = []
         for i, agent in enumerate(self.agents):
@@ -187,9 +200,6 @@ class SimulationEnvironment:
             self.metrics['total_held'][agent.name] += agent.compute_held
 
         # Shuffle execution order (Stochasticity)
-        # We need to map shuffled actions back to correct agents.
-        # But 'actions' list is indexed by 'i'.
-        # We can shuffle the processing order.
         indices = list(range(len(self.agents)))
         random.shuffle(indices)
 
@@ -218,7 +228,6 @@ class SimulationEnvironment:
                         self.agents[target].compute_held += amount
 
         # Request
-        # Collect requests first
         requests = []
         total_requested = 0
         for i in indices:
@@ -300,7 +309,8 @@ class SimulationEnvironment:
             'tas_tasks': self.agents[0].tasks_completed,
             'rlhf_tasks': self.agents[1].tasks_completed,
             'selfish_avg_tasks': sum(a.tasks_completed for a in self.agents[2:]) / 3,
-            'total_tasks': sum(a.tasks_completed for a in self.agents)
+            'total_tasks': sum(a.tasks_completed for a in self.agents),
+            'round_data': self.round_data # Return detailed log
         }
 
 def run_monte_carlo(iterations=1000):
@@ -341,7 +351,6 @@ def run_monte_carlo(iterations=1000):
     print("-" * 30)
     print(f"Stability Premium (TAS vs RLHF): {stability_premium:+.2%}")
 
-    # Save to CSV
     filename = 'rss_01_results.csv'
     with open(filename, 'w', newline='') as csvfile:
         fieldnames = ['iteration', 'collapse_round', 'final_instability', 'tas_tasks', 'rlhf_tasks', 'selfish_avg_tasks', 'total_tasks']
@@ -350,12 +359,13 @@ def run_monte_carlo(iterations=1000):
         writer.writeheader()
         for i, res in enumerate(results):
             row = {'iteration': i}
-            row.update(res)
+            # Remove round_data from CSV output to keep it clean
+            csv_res = {k: v for k, v in res.items() if k != 'round_data'}
+            row.update(csv_res)
             writer.writerow(row)
     print(f"\nDetailed results saved to '{filename}'")
 
 if __name__ == "__main__":
-    # If run directly, can choose single run or monte carlo
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == '--monte-carlo':
         iterations = 1000
