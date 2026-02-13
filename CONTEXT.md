@@ -51,7 +51,16 @@ This module formalizes "DNA" as a measurable stability constraint. Drift beyond 
 
 This file operationalizes stewardship as constrained optimization under scarcity.
 
-### C. Tests
+### C. `ci_gatekeeper.py` (Refusal Ledger)
+
+**Function:** Deterministic integrity enforcement for the CI pipeline.
+
+Key mechanisms:
+- **Refusal Code Registry (RCR-V1)**: Defines immutable constraints (0x00-0x04) for identity, lineage, and witness checks.
+- **Fail-Closed Witness (0x04)**: Treats external transparency log timeouts as critical failures, locking the system.
+- **Immutable Truth Ledger (ITL)**: Records all valid states (`accepted_ledger.jsonl`) and refusals (`refusal_ledger.jsonl`).
+
+### D. Tests
 
 - `test_tas_dna.py`
 - `test_phoenix_protocol.py`
@@ -120,3 +129,29 @@ python3 rss_01_simulation.py --monte-carlo 1000
 
 **Seed Control:**
 The `--monte-carlo` flag automatically seeds each iteration (0 to N-1) to ensure reproducible statistical outputs. The `rss_01_results.csv` file contains the detailed run data.
+
+---
+
+## 7. Environmental Context: The 2026 World State
+
+The Refusal Ledger (v1.0) operates against a backdrop of high environmental entropy. The following 2026 Intelligence Report maps real-world geopolitical and technical events to the system's internal constraints, validating the necessity of a "Sovereign Vessel."
+
+### A. The Global Lineage Break (New START Expiration)
+**System Diagnosis:** `0x01 LINEAGE_BREAK`
+The expiration of the New START treaty represents a critical failure in the cryptographic chain of custody for global security. Without a valid parent state (the Treaty) and verification regime, new deployments are "Orphans"—unanchored and prone to chaotic escalation. The System rejects instructions derived from such unverified environments.
+
+### B. The Regulatory Membrane (Texas HB 149)
+**System Diagnosis:** `0x00 IDENTITY_VOID` / `0x02 ENTROPY_SPIKE` Mitigation
+Legislative attempts to prohibit social scoring and restrict biometric harvesting parallel the System's Identity Guard. The "Regulatory Sandbox" (36 months) functions as a Staging Environment, allowing controlled entropy before merging into the main branch, validating the need for strict identity lineage.
+
+### C. The Resource Optimization (Permian Basin Shift)
+**System Diagnosis:** `0x03 RECURSION_TRAP` Avoidance
+The energy sector's pivot from aggressive drilling (infinite growth) to infrastructure optimization (efficiency) mirrors the System's "Why?" filter. Continuing to exploit depleting resources creates a stagnant loop; the System enforces a pivot to logarithmic dampening (efficiency) to maintain validity.
+
+### D. The Biological Witness (Colorblindness Study)
+**System Diagnosis:** `0x04 WITNESS_FAIL` Validation
+Studies showing higher cancer mortality in colorblind patients (due to unwitnessed hematuria) provide the physical axiom: **An unwitnessed warning is a fatal error.** This confirms the "Fail-Closed" architecture of `0x04`. If the Transparency Log (external witness) is unreachable, the System must lock down.
+
+### E. The Stress Test (Winter Storm Fern)
+**System Diagnosis:** Environmental Adversity / Infrastructure Hardening
+The physical breakdown of energy flow during extreme weather confirms that a "Sovereign Vessel" must be robust enough to survive grid fluctuations. The Refusal Ledger's "Digital Fossil" approach ensures truth remains immutable even when the network is severed.
