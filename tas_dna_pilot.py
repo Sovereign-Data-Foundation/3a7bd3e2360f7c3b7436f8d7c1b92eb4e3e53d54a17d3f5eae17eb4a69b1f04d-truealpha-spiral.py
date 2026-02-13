@@ -10,14 +10,15 @@ class ERTriagePilot:
         }
         self.current_counts = collections.defaultdict(int)
         self.total_patients = 0
-        self.history = [] # To store snapshots for rollback (Phoenix Protocol)
+        self.history = [] # To store deltas (categories) for rollback (Phoenix Protocol)
+        self.attested_history_length = 0
 
     def admit_patient(self, category):
         if category not in self.baseline:
             raise ValueError(f"Invalid category: {category}")
 
-        # Save state for potential rollback
-        self.history.append(self.current_counts.copy())
+        # Save delta for potential rollback
+        self.history.append(category)
 
         self.current_counts[category] += 1
         self.total_patients += 1
@@ -54,14 +55,22 @@ class ERTriagePilot:
             print(f"Drift detected ({drift} > {threshold}). Initiating Phoenix Protocol.")
             self.phoenix_protocol()
             return False
+
+        # Mark current state as attested
+        self.attested_history_length = len(self.history)
         return True
 
     def phoenix_protocol(self):
         """
-        Reverts to the last attested state.
-        (Simplified for this pilot: just undoes the last addition)
+        Reverts to the last attested state by undoing changes back to the
+        last verified checkpoint. This ensures robust rollback beyond just
+        the immediate previous state.
         """
-        if self.history:
-            self.current_counts = self.history.pop()
+        print(f"Initiating Phoenix Protocol... Rolling back from {len(self.history)} to {self.attested_history_length}")
+
+        while len(self.history) > self.attested_history_length:
+            category = self.history.pop()
+            self.current_counts[category] -= 1
             self.total_patients -= 1
-            print("System reverted to previous state.")
+
+        print("System reverted to last attested state.")
