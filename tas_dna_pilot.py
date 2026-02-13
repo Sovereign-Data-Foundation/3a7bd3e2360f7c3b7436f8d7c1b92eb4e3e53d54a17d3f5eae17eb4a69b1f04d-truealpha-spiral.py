@@ -17,7 +17,7 @@ class ERTriagePilot:
             raise ValueError(f"Invalid category: {category}")
 
         # Save state for potential rollback
-        self.history.append(self.current_counts.copy())
+        self.history.append(category)
 
         self.current_counts[category] += 1
         self.total_patients += 1
@@ -62,6 +62,7 @@ class ERTriagePilot:
         (Simplified for this pilot: just undoes the last addition)
         """
         if self.history:
-            self.current_counts = self.history.pop()
+            category = self.history.pop()
+            self.current_counts[category] -= 1
             self.total_patients -= 1
             print("System reverted to previous state.")
