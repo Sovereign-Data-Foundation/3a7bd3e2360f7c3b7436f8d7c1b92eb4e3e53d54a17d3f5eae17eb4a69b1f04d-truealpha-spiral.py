@@ -36,5 +36,35 @@ class TestERTriagePilot(unittest.TestCase):
 
         self.assertAlmostEqual(drift, 0.1, msg=f"Expected drift 0.1 (TVD), but got {drift}")
 
+    def test_rollback_invariance(self):
+        """
+        Ensures that admit_patient() + phoenix_protocol() is an identity operation.
+        This guards against future side effects being added to admission without
+        being mirrored in rollback.
+        """
+        # Reach a random valid state
+        import random
+        categories = list(self.pilot.baseline.keys())
+        for _ in range(50):
+            self.pilot.admit_patient(random.choice(categories))
+
+        # Snapshot state
+        state_counts_before = self.pilot.current_counts.copy()
+        state_total_before = self.pilot.total_patients
+        state_history_len_before = len(self.pilot.history)
+
+        # Action: Admit + Rollback
+        cat = random.choice(categories)
+        self.pilot.admit_patient(cat)
+        self.pilot.phoenix_protocol()
+
+        # Verify Invariant
+        self.assertEqual(self.pilot.current_counts, state_counts_before,
+                         "Counts dict mutated after rollback")
+        self.assertEqual(self.pilot.total_patients, state_total_before,
+                         "Total patients count mutated after rollback")
+        self.assertEqual(len(self.pilot.history), state_history_len_before,
+                         "History length mutated after rollback")
+
 if __name__ == '__main__':
     unittest.main()
