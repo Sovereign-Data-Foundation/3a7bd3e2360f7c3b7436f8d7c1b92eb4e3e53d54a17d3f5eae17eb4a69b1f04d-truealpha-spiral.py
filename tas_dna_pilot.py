@@ -36,12 +36,11 @@ class ERTriagePilot:
         if self.total_patients == 0:
             return 0.0
 
-        current_dist = self.get_current_distribution()
-
         # TVD = 0.5 * sum(|P(x) - Q(x)|)
         l1_distance = 0.0
-        for category in self.baseline:
-            l1_distance += abs(current_dist.get(category, 0) - self.baseline[category])
+        for category, baseline_prob in self.baseline.items():
+            current_prob = self.current_counts.get(category, 0) / self.total_patients
+            l1_distance += abs(current_prob - baseline_prob)
 
         return 0.5 * l1_distance
 
