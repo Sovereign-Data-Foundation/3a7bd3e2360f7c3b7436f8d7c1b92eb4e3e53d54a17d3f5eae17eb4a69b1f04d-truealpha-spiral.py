@@ -36,5 +36,17 @@ class TestERTriagePilot(unittest.TestCase):
 
         self.assertAlmostEqual(drift, 0.1, msg=f"Expected drift 0.1 (TVD), but got {drift}")
 
+    def test_phoenix_protocol_rollback(self):
+        # Admit one patient
+        self.pilot.admit_patient('Emergent')
+        self.assertEqual(self.pilot.total_patients, 1)
+        self.assertEqual(self.pilot.current_counts['Emergent'], 1)
+
+        # Trigger rollback
+        self.pilot.phoenix_protocol()
+        self.assertEqual(self.pilot.total_patients, 0)
+        self.assertEqual(self.pilot.current_counts['Emergent'], 0)
+        self.assertEqual(len(self.pilot.history), 0)
+
 if __name__ == '__main__':
     unittest.main()
