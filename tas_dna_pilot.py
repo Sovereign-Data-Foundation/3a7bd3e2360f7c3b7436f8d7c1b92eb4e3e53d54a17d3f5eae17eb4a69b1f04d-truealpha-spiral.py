@@ -1,4 +1,3 @@
-import collections
 
 class ERTriagePilot:
     def __init__(self):
@@ -8,7 +7,8 @@ class ERTriagePilot:
             'Urgent': 0.5,
             'Non-Urgent': 0.2
         }
-        self.current_counts = collections.defaultdict(int)
+        # Optimized: Use pre-initialized dict instead of defaultdict for faster access
+        self.current_counts = {k: 0 for k in self.baseline}
         self.total_patients = 0
         self.history = [] # To store deltas (categories) for rollback (Phoenix Protocol)
         self.attested_history_length = 0
@@ -40,7 +40,8 @@ class ERTriagePilot:
         # TVD = 0.5 * sum(|P(x) - Q(x)|)
         l1_distance = 0.0
         for category, baseline_prob in self.baseline.items():
-            current_prob = self.current_counts.get(category, 0) / self.total_patients
+            # Optimized: Direct dict access is faster than .get()
+            current_prob = self.current_counts[category] / self.total_patients
             l1_distance += abs(current_prob - baseline_prob)
 
         return 0.5 * l1_distance
