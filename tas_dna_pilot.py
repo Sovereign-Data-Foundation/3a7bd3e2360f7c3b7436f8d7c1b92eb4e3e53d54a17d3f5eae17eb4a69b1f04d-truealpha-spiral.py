@@ -7,11 +7,37 @@ class ERTriagePilot:
             'Urgent': 0.5,
             'Non-Urgent': 0.2
         }
+        # Optimization: Pre-compute items list for faster iteration
+        self.baseline_items = list(self.baseline.items())
+
         # Optimized: Use pre-initialized dict instead of defaultdict for faster access
         self.current_counts = {k: 0 for k in self.baseline}
         self.total_patients = 0
         self.history = [] # To store deltas (categories) for rollback (Phoenix Protocol)
         self.attested_history_length = 0
+
+        # New State: Track drift incrementally for O(1) read access
+        self.current_drift = 0.0
+
+    def _recalculate_drift(self):
+        """
+        Internal helper to update the drift metric.
+        Called after any change to current_counts or total_patients.
+        """
+        if self.total_patients == 0:
+            self.current_drift = 0.0
+            return
+
+        inv_total = 1.0 / self.total_patients
+        counts = self.current_counts
+        l1_distance = 0.0
+
+        # Optimization: Iterate over pre-computed list
+        for category, baseline_prob in self.baseline_items:
+            current_prob = counts[category] * inv_total
+            l1_distance += abs(current_prob - baseline_prob)
+
+        self.current_drift = 0.5 * l1_distance
 
     def admit_patient(self, category):
         if category not in self.baseline:
@@ -23,6 +49,9 @@ class ERTriagePilot:
         self.current_counts[category] += 1
         self.total_patients += 1
 
+        # Update drift state immediately (Write-heavy optimization)
+        self._recalculate_drift()
+
     def get_current_distribution(self):
         if self.total_patients == 0:
             return {k: 0 for k in self.baseline}
@@ -30,28 +59,18 @@ class ERTriagePilot:
 
     def calculate_drift(self):
         """
-        Calculates the drift using Total Variation Distance (TVD) between
-        the current distribution and the baseline.
-        TVD(P, Q) = 0.5 * sum(|P(x) - Q(x)|)
+        Returns the current drift using the pre-calculated state.
+        This is now an O(1) operation.
         """
-        if self.total_patients == 0:
-            return 0.0
-
-        # TVD = 0.5 * sum(|P(x) - Q(x)|)
-        l1_distance = 0.0
-        for category, baseline_prob in self.baseline.items():
-            # Optimized: Direct dict access is faster than .get()
-            current_prob = self.current_counts[category] / self.total_patients
-            l1_distance += abs(current_prob - baseline_prob)
-
-        return 0.5 * l1_distance
+        return self.current_drift
 
     def check_integrity(self, threshold=0.1):
         """
         Checks if the drift exceeds the threshold.
         If it does, triggers the Phoenix Protocol (rollback).
         """
-        drift = self.calculate_drift()
+        # Optimized: O(1) lookup
+        drift = self.current_drift
         if drift > threshold:
             print(f"Drift detected ({drift} > {threshold}). Initiating Phoenix Protocol.")
             self.phoenix_protocol()
@@ -75,3 +94,5 @@ class ERTriagePilot:
             self.total_patients -= 1
 
         print("System reverted to last attested state.")
+        # Recalculate drift after rollback
+        self._recalculate_drift()

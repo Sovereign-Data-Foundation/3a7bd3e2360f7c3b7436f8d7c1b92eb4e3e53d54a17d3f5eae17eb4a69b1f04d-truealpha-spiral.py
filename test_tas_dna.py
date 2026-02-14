@@ -13,6 +13,9 @@ class TestERTriagePilot(unittest.TestCase):
         self.pilot.current_counts['Non-Urgent'] = 2
         self.pilot.total_patients = 10
 
+        # Manually trigger drift update since we bypassed admit_patient
+        self.pilot._recalculate_drift()
+
         drift = self.pilot.calculate_drift()
         self.assertAlmostEqual(drift, 0.0)
 
@@ -31,6 +34,9 @@ class TestERTriagePilot(unittest.TestCase):
         self.pilot.current_counts['Urgent'] = 4
         self.pilot.current_counts['Non-Urgent'] = 2
         self.pilot.total_patients = 10
+
+        # Manually trigger drift update since we bypassed admit_patient
+        self.pilot._recalculate_drift()
 
         drift = self.pilot.calculate_drift()
 
