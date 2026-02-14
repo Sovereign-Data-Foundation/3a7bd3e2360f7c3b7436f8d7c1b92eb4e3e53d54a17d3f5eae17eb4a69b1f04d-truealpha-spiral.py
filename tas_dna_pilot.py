@@ -38,9 +38,13 @@ class ERTriagePilot:
             return 0.0
 
         # TVD = 0.5 * sum(|P(x) - Q(x)|)
+        # Optimized: Pre-calculate the inverse of total_patients to replace
+        # division with multiplication inside the loop.
+        inv_total = 1.0 / self.total_patients
         l1_distance = 0.0
+        counts = self.current_counts
         for category, baseline_prob in self.baseline.items():
-            current_prob = self.current_counts.get(category, 0) / self.total_patients
+            current_prob = counts.get(category, 0) * inv_total
             l1_distance += abs(current_prob - baseline_prob)
 
         return 0.5 * l1_distance
