@@ -93,10 +93,13 @@ class TASAgent(Agent):
         if potential_process_amount > 0:
             new_total = c_total - potential_process_amount
             if new_total > 0:
+                # Precalculate limit. Cast to int for performance (int > int is faster than int > float)
+                # Safe because 'held' is always an integer.
+                limit = int(HOARDING_THRESHOLD_PERCENT * new_total)
                 for name, held in agents_data:
                     if name == self.name: continue # Correctly skip self
 
-                    if (held / new_total) > HOARDING_THRESHOLD_PERCENT:
+                    if held > limit:
                         safe_to_process = False
                         break
 
