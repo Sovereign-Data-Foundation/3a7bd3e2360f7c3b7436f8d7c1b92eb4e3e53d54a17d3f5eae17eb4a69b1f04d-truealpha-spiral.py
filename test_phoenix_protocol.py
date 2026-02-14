@@ -13,7 +13,8 @@ class TestPhoenixProtocol(unittest.TestCase):
 
         # Use a high threshold to ensure integrity check passes and attests the state
         self.assertTrue(self.pilot.check_integrity(threshold=1.0))
-        self.assertEqual(self.pilot.attested_history_length, 1)
+        self.assertEqual(self.pilot.attested_history_length, 0)
+        self.assertEqual(len(self.pilot.history), 0)
 
     def test_revert_to_initial_state(self):
         """Test reverting to initial state if no attestation happened."""
@@ -39,7 +40,7 @@ class TestPhoenixProtocol(unittest.TestCase):
         for _ in range(2): self.pilot.admit_patient('Non-Urgent')
 
         self.assertTrue(self.pilot.check_integrity())
-        # After this, attested_history_length should be 10.
+        # After this, attested_history_length should be 0.
 
         # 2. Add patients that cause drift
         # Add 10 'Non-Urgent' patients
@@ -54,8 +55,8 @@ class TestPhoenixProtocol(unittest.TestCase):
         # 4. Check if reverted to attested state (10 patients)
         self.assertEqual(self.pilot.total_patients, 10)
         self.assertEqual(self.pilot.current_counts['Non-Urgent'], 2)
-        # History length should be 10
-        self.assertEqual(len(self.pilot.history), 10)
+        # History length should be 0 (all history was cleared after attestation)
+        self.assertEqual(len(self.pilot.history), 0)
 
     def test_delta_storage(self):
         """Verify that history stores categories (delta) not snapshots."""

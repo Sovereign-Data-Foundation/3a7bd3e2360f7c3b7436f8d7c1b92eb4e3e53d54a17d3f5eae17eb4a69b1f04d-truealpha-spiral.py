@@ -57,7 +57,9 @@ class ERTriagePilot:
             return False
 
         # Mark current state as attested
-        self.attested_history_length = len(self.history)
+        # Optimization: Clear history since we don't need to rollback past this point
+        self.history.clear()
+        self.attested_history_length = 0
         return True
 
     def phoenix_protocol(self):
