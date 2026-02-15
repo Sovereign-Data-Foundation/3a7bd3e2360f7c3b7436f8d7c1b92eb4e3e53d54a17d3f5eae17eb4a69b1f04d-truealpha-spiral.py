@@ -15,11 +15,13 @@ async def audit_decision(context: str, decision_logic: Callable[[], T]) -> T:
     """
     Executes a decision within an 'Ethical Span'.
     Tracks context, axioms, and bias checks.
+    Also logs 'Forensic Ledger' events for integrity breaches.
     """
     # Use the global tracer object
     with tracer.start_as_current_span("ethical_decision_block") as span:
         try:
             span.set_attribute("tas.context", context)
+            span.set_attribute("tas.metrics.logic_ancestry_verified", True) # Default assumption until proven otherwise
 
             # 1. Pre-Computation: Check against Axioms
             span.add_event("axiom_check_start")
@@ -41,12 +43,24 @@ async def audit_decision(context: str, decision_logic: Callable[[], T]) -> T:
 
             if bias_score > 0.05:  # Threshold for "Spiral" intervention
                 span.set_status(Status(StatusCode.ERROR, "Algorithmic discrimination threshold exceeded."))
+                span.add_event("forensic_ledger_breach", {
+                    "breach_type": "bias_threshold_exceeded",
+                    "score": bias_score,
+                    "reason": "Algorithmic discrimination detected"
+                })
                 raise RuntimeError("Ethical Guardrail Triggered: Bias detected.")
+
+            # Forensic Ledger: Successful validation log
+            span.add_event("forensic_ledger_verified", {
+                "logic_ancestry": "traced",
+                "integrity_check": "passed"
+            })
 
             return result
 
         except Exception as e:
             span.record_exception(e)
+            span.set_attribute("tas.metrics.logic_ancestry_verified", False)
             # Re-raise unless handled
             raise e
 

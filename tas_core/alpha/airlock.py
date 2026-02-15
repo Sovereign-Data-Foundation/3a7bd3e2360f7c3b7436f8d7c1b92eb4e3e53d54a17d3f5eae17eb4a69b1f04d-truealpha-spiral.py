@@ -1,12 +1,14 @@
 import hashlib
 import json
 import time
+import math
 from typing import Dict, List, Tuple, Any, Optional
 
 # Constants from TVC v0.2 Spec
 GOLDEN = 1.618033988749895
 COHERENCE_MIN = 0.95
 RESONANCE_THRESHOLD = 5.0
+ENERGY_COST_MAX = 100.0  # Max allowable energy cost for a valid transition
 
 # Reason Codes
 AIRLOCK_DENIED_NOT_DRAFT = "AIRLOCK_DENIED_NOT_DRAFT"
@@ -15,6 +17,7 @@ AIRLOCK_DENIED_PROVENANCE_INCOMPLETE = "AIRLOCK_DENIED_PROVENANCE_INCOMPLETE"
 AIRLOCK_DENIED_CONSTRAINTS_FAILED = "AIRLOCK_DENIED_CONSTRAINTS_FAILED"
 AIRLOCK_DENIED_COHERENCE_TOO_LOW = "AIRLOCK_DENIED_COHERENCE_TOO_LOW"
 AIRLOCK_DENIED_BOND_BROKEN = "AIRLOCK_DENIED_BOND_BROKEN"
+AIRLOCK_DENIED_ENERGY_COST_TOO_HIGH = "AIRLOCK_DENIED_ENERGY_COST_TOO_HIGH"
 AIRLOCK_PASSED_STATE_COMMITTED = "AIRLOCK_PASSED_STATE_COMMITTED"
 
 def sha256(data: str) -> str:
@@ -56,6 +59,28 @@ def bond_valid(payload: Dict[str, Any], expected_bond_hash: str) -> bool:
     if "bond_hash" not in payload:
         return False
     return payload["bond_hash"] == expected_bond_hash
+
+def calculate_thermodynamic_honesty(metrics: Dict[str, Any]) -> float:
+    """
+    Calculates the 'Energy Cost of Deception'.
+    Truth scales at 1:1. Hallucination (drift) requires exponential correction.
+
+    Formula: Cost = (1 - coherence) * e^(resonance_gap)
+    Where resonance_gap is distance from perfect alignment (assumed 1.0 baseline).
+    """
+    coherence = metrics.get("coherence", 0.0)
+    resonance = metrics.get("resonance", 1.0)
+
+    # Drift from Truth (1.0)
+    drift = 1.0 - coherence
+    if drift < 0: drift = 0 # Should not happen if normalized
+
+    # Exponential penalty for drift
+    # If perfect truth (drift=0), cost is 0.
+    # If hallucination (drift>0), cost scales exponentially.
+    energy_cost = drift * math.exp(resonance)
+
+    return energy_cost
 
 def crystallize_block(payload: Dict[str, Any], parent_block: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -110,16 +135,23 @@ def airlock_gate(candidate_payload: Dict[str, Any], parent_block: Dict[str, Any]
     if not bond_valid(candidate_payload, expected_bond):
         return False, AIRLOCK_DENIED_BOND_BROKEN, None
 
+    # NEW: Thermodynamic Honesty Check (Input validation phase)
+    # Calculate energy cost of this transition BEFORE inflection mechanics
+    energy_cost = calculate_thermodynamic_honesty(metrics)
+    candidate_payload["metrics"]["thermodynamic_cost"] = energy_cost
+
+    if energy_cost > ENERGY_COST_MAX:
+        # Revert "Truth as the Path of Least Resistance": High energy cost implies deception/hallucination masking
+        return False, AIRLOCK_DENIED_ENERGY_COST_TOO_HIGH, None
+
     # 6) Inflection mechanics (deterministic amplification + collapse)
     resonance = float(metrics.get("resonance", 0.0))
 
     # Simulate deterministic amplification loop (conceptually)
-    # In practice, we check if it meets the threshold or simulate the climb
     while resonance < RESONANCE_THRESHOLD:
         resonance *= GOLDEN
 
     # Inflection-triggered collapse to commitment-ready state
-    # This modifies the payload in-memory before crystallization
     if resonance >= RESONANCE_THRESHOLD:
         candidate_payload["metrics"]["complexity"] = 0.0
         candidate_payload["metrics"]["resonance"] = resonance * (GOLDEN ** 2)
