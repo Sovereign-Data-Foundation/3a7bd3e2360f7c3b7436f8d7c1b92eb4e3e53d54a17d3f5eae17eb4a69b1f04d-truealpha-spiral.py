@@ -18,6 +18,7 @@ AIRLOCK_DENIED_CONSTRAINTS_FAILED = "AIRLOCK_DENIED_CONSTRAINTS_FAILED"
 AIRLOCK_DENIED_COHERENCE_TOO_LOW = "AIRLOCK_DENIED_COHERENCE_TOO_LOW"
 AIRLOCK_DENIED_BOND_BROKEN = "AIRLOCK_DENIED_BOND_BROKEN"
 AIRLOCK_DENIED_ENERGY_COST_TOO_HIGH = "AIRLOCK_DENIED_ENERGY_COST_TOO_HIGH"
+AIRLOCK_DENIED_RESONANCE_STALL = "AIRLOCK_DENIED_RESONANCE_STALL"
 AIRLOCK_PASSED_STATE_COMMITTED = "AIRLOCK_PASSED_STATE_COMMITTED"
 
 def sha256(data: str) -> str:
@@ -82,6 +83,33 @@ def calculate_thermodynamic_honesty(metrics: Dict[str, Any]) -> float:
 
     return energy_cost
 
+def amplify_resonance(resonance: float) -> Tuple[float, float]:
+    """
+    Simulates the Golden Ratio amplifier loop.
+    Returns (final_resonance, entropy_generated).
+
+    If resonance < 1.0 (weak signal), entropy generation is high.
+    If resonance >= 1.0 (strong signal), entropy generation is minimal (resonant).
+    """
+    current_resonance = resonance
+    entropy = 0.0
+    iterations = 0
+    max_iterations = 10 # Safety break to prevent infinite loops on weak signals
+
+    while current_resonance < RESONANCE_THRESHOLD and iterations < max_iterations:
+        # Amplifier Logic:
+        # Truth resonates: amplification is efficient.
+        # Deception (low initial resonance) generates heat/entropy.
+
+        # Friction factor: inversely proportional to current strength
+        friction = 1.0 / (current_resonance + 0.001)
+
+        entropy += friction * GOLDEN
+        current_resonance *= GOLDEN
+        iterations += 1
+
+    return current_resonance, entropy
+
 def crystallize_block(payload: Dict[str, Any], parent_block: Dict[str, Any]) -> Dict[str, Any]:
     """
     Commits the state to an immutable block format.
@@ -144,17 +172,21 @@ def airlock_gate(candidate_payload: Dict[str, Any], parent_block: Dict[str, Any]
         # Revert "Truth as the Path of Least Resistance": High energy cost implies deception/hallucination masking
         return False, AIRLOCK_DENIED_ENERGY_COST_TOO_HIGH, None
 
-    # 6) Inflection mechanics (deterministic amplification + collapse)
-    resonance = float(metrics.get("resonance", 0.0))
+    # 6) Inflection mechanics (Computational Friction)
+    # Simulate the Golden Ratio amplifier
+    initial_resonance = float(metrics.get("resonance", 0.0))
+    final_resonance, entropy = amplify_resonance(initial_resonance)
 
-    # Simulate deterministic amplification loop (conceptually)
-    while resonance < RESONANCE_THRESHOLD:
-        resonance *= GOLDEN
+    candidate_payload["metrics"]["entropy_generated"] = entropy
+
+    # If the signal was too weak to resonate (stalled), deny exit
+    if final_resonance < RESONANCE_THRESHOLD:
+         return False, AIRLOCK_DENIED_RESONANCE_STALL, None
 
     # Inflection-triggered collapse to commitment-ready state
-    if resonance >= RESONANCE_THRESHOLD:
+    if final_resonance >= RESONANCE_THRESHOLD:
         candidate_payload["metrics"]["complexity"] = 0.0
-        candidate_payload["metrics"]["resonance"] = resonance * (GOLDEN ** 2)
+        candidate_payload["metrics"]["resonance"] = final_resonance * (GOLDEN ** 2)
 
     # 7) Exit to reality: crystallize + commit (irreversible)
     new_block = crystallize_block(candidate_payload, parent_block)

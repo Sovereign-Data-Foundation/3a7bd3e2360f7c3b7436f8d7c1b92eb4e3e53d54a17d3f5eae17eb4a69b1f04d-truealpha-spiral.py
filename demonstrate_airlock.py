@@ -66,7 +66,24 @@ print(f"Scenario 3 (Energy Cost Fail): Success={success}, Reason={reason}")
 assert reason == "AIRLOCK_DENIED_ENERGY_COST_TOO_HIGH"
 
 
-# Scenario 4: Valid draft, passes all invariants
+# Scenario 4: "Resonance Stall" (Low initial resonance, fails to amplify)
+# Resonance < 1.0 (weak signal) might generate too much entropy or just fail to hit 5.0 in 10 steps
+# Let's try a very weak signal
+draft_stall_fail = {
+    "mode": "draft",
+    "parent_hash": parent_block["block_hash"],
+    "support": [],
+    "constraints": [],
+    "metrics": {"coherence": 0.99, "resonance": 0.01}, # Very weak
+    "bond_hash": get_bond_hash(parent_block["block_hash"], 1.618033988749895)
+}
+# 0.01 -> 0.016 -> 0.026 -> ... will take > 10 steps to reach 5.0
+success, reason, new_block = airlock_gate(draft_stall_fail, parent_block, ledger)
+print(f"Scenario 4 (Resonance Stall): Success={success}, Reason={reason}")
+assert reason == "AIRLOCK_DENIED_RESONANCE_STALL"
+
+
+# Scenario 5: Valid draft, passes all invariants
 draft_success = {
     "mode": "draft",
     "parent_hash": parent_block["block_hash"],
@@ -77,12 +94,13 @@ draft_success = {
 }
 
 success, reason, new_block = airlock_gate(draft_success, parent_block, ledger)
-print(f"Scenario 4 (Success): Success={success}, Reason={reason}")
+print(f"Scenario 5 (Success): Success={success}, Reason={reason}")
 assert reason == "AIRLOCK_PASSED_STATE_COMMITTED"
 assert new_block["parent_hash"] == parent_block["block_hash"]
 assert len(ledger) == 2 # Genesis + 1
 # Verify energy cost was logged
 print(f"Success Block Energy Cost: {new_block['payload']['metrics'].get('thermodynamic_cost')}")
+print(f"Success Block Entropy Generated: {new_block['payload']['metrics'].get('entropy_generated')}")
 
 
 print("\nAirlock Demo Complete. Ledger State:")
