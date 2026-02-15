@@ -14,13 +14,15 @@ class ERTriagePilot:
         self.attested_history_length = 0
 
     def admit_patient(self, category):
-        if category not in self.baseline:
+        # Optimization: Use EAFP (try-except) to avoid redundant key lookup.
+        # This is faster than 'if category not in self.baseline' for valid inputs.
+        try:
+            self.current_counts[category] += 1
+        except KeyError:
             raise ValueError(f"Invalid category: {category}")
 
         # Save delta for potential rollback
         self.history.append(category)
-
-        self.current_counts[category] += 1
         self.total_patients += 1
 
     def get_current_distribution(self):
