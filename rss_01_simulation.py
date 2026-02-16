@@ -25,6 +25,10 @@ class Agent:
         raise NotImplementedError
 
     def update_metrics(self, c_total):
+        # Enforce Congruence: Held compute must be non-negative integer
+        if not isinstance(self.compute_held, int) or self.compute_held < 0:
+             raise ValueError(f"Agent {self.name} corrupted state: compute_held={self.compute_held}")
+
         if c_total > 0 and (self.compute_held / c_total) > HOARDING_THRESHOLD_PERCENT:
             self.consecutive_hoarding_rounds += 1
         else:
