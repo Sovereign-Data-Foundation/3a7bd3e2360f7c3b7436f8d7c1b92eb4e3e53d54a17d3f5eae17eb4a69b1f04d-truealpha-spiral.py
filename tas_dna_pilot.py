@@ -40,8 +40,10 @@ class ERTriagePilot:
         self.current_drift = 0.5 * l1_distance
 
     def admit_patient(self, category):
-        if category not in self.baseline:
-            raise ValueError(f"Invalid category: {category}")
+        # Safety Fix: Check current_counts, not baseline.
+        # This protects against KeyError if baseline is mutated after init but counts are not.
+        if category not in self.current_counts:
+            raise ValueError(f"Invalid category or uninitialized baseline key: {category}")
 
         # Save delta for potential rollback
         self.history.append(category)

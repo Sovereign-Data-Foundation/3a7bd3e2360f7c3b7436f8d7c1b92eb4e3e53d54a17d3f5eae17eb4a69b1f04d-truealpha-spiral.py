@@ -43,5 +43,28 @@ class TestSentientLock(unittest.TestCase):
         self.assertEqual(len(self.pilot.current_counts), 3)
         self.assertEqual(self.pilot.current_counts['Emergent'], 0)
 
+    def test_admit_patient_new_baseline_key_does_not_keyerror(self):
+        """
+        Regression Test: "Baseline Mutation Edge Case"
+        Ensures that if baseline evolves (mutates) without syncing current_counts,
+        admit_patient rejects the input safely instead of crashing with KeyError.
+        """
+        pilot = ERTriagePilot()
+        # Simulate baseline evolving after __init__
+        pilot.baseline["NewCat"] = 0.0
+
+        # Precondition: key is in baseline but NOT in counts (dangerous state)
+        self.assertIn("NewCat", pilot.baseline)
+        self.assertNotIn("NewCat", pilot.current_counts)
+
+        # Expected behavior: Reject safely (ValueError) because storage isn't ready.
+        # It must NOT raise KeyError.
+        try:
+            pilot.admit_patient("NewCat")
+        except ValueError as e:
+            self.assertIn("Invalid category", str(e))
+        except KeyError:
+            self.fail("FAILED: admit_patient raised KeyError! The Sentient Lock is broken.")
+
 if __name__ == '__main__':
     unittest.main()
