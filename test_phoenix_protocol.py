@@ -27,6 +27,7 @@ class TestPhoenixProtocol(unittest.TestCase):
         # Should be empty
         self.assertEqual(self.pilot.total_patients, 0)
         self.assertEqual(len(self.pilot.history), 0)
+        # Use property access
         self.assertEqual(self.pilot.current_counts['Urgent'], 0)
 
     def test_revert_to_attested_state(self):

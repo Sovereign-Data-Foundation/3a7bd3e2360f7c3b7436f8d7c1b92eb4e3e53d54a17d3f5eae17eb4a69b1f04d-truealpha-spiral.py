@@ -36,12 +36,13 @@ class TestSentientLock(unittest.TestCase):
         """
         # Ensure it's a standard dict, not a defaultdict
         import collections
-        self.assertNotIsInstance(self.pilot.current_counts, collections.defaultdict,
-                                 "Regression: Optimization lost! current_counts should be a standard dict.")
+        # Access private attribute as strict structure is now enforced
+        self.assertNotIsInstance(self.pilot._current_counts, collections.defaultdict,
+                                 "Regression: Optimization lost! _current_counts should be a standard dict.")
 
         # Ensure keys are pre-initialized
-        self.assertEqual(len(self.pilot.current_counts), 3)
-        self.assertEqual(self.pilot.current_counts['Emergent'], 0)
+        self.assertEqual(len(self.pilot._current_counts), 3)
+        self.assertEqual(self.pilot._current_counts['Emergent'], 0)
 
     def test_admit_patient_new_baseline_key_does_not_keyerror(self):
         """
@@ -51,7 +52,8 @@ class TestSentientLock(unittest.TestCase):
         """
         pilot = ERTriagePilot()
         # Simulate baseline evolving after __init__
-        pilot.baseline["NewCat"] = 0.0
+        # NOTE: We must use the private attribute because .baseline is now read-only (structurally enforced!)
+        pilot._baseline["NewCat"] = 0.0
 
         # Precondition: key is in baseline but NOT in counts (dangerous state)
         self.assertIn("NewCat", pilot.baseline)

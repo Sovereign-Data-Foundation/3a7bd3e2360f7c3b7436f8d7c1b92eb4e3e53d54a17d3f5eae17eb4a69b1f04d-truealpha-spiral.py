@@ -7,10 +7,12 @@ class TestERTriagePilot(unittest.TestCase):
 
     def test_calculate_drift_exact_baseline(self):
         # Manually set counts to match baseline exactly (10 patients)
-        # Emergent: 3, Urgent: 5, Non-Urgent: 2
-        self.pilot.current_counts['Emergent'] = 3
-        self.pilot.current_counts['Urgent'] = 5
-        self.pilot.current_counts['Non-Urgent'] = 2
+        # Note: Since current_counts is now private/read-only via property,
+        # we must access the private attribute for test setup bypass
+        # OR use the public API. Using private attribute for white-box testing.
+        self.pilot._current_counts['Emergent'] = 3
+        self.pilot._current_counts['Urgent'] = 5
+        self.pilot._current_counts['Non-Urgent'] = 2
         self.pilot.total_patients = 10
 
         # Manually trigger drift update since we bypassed admit_patient
@@ -30,9 +32,9 @@ class TestERTriagePilot(unittest.TestCase):
         # Sum of abs diffs (L1) = 0.2
         # TVD = 0.5 * 0.2 = 0.1
 
-        self.pilot.current_counts['Emergent'] = 4
-        self.pilot.current_counts['Urgent'] = 4
-        self.pilot.current_counts['Non-Urgent'] = 2
+        self.pilot._current_counts['Emergent'] = 4
+        self.pilot._current_counts['Urgent'] = 4
+        self.pilot._current_counts['Non-Urgent'] = 2
         self.pilot.total_patients = 10
 
         # Manually trigger drift update since we bypassed admit_patient
