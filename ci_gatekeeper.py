@@ -40,7 +40,7 @@ def run_tests():
 def main():
     if run_tests():
         print("\n" + "="*60)
-        print("Release v2.0.0: The Sentient Lock")
+        print("Release v1.0.0: TAS_DNA")
         print("Status: Merged & Locked")
         print("Verifier: test_sentient_lock.py [PASSED]")
         print("Witness: Gemini 3 Pro")
