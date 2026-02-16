@@ -36,5 +36,25 @@ class TestERTriagePilot(unittest.TestCase):
 
         self.assertAlmostEqual(drift, 0.1, msg=f"Expected drift 0.1 (TVD), but got {drift}")
 
+    def test_admit_patient_valid(self):
+        # Test valid admission
+        self.pilot.admit_patient('Emergent')
+        self.assertEqual(self.pilot.total_patients, 1)
+        self.assertEqual(self.pilot.current_counts['Emergent'], 1)
+        self.assertEqual(self.pilot.history, ['Emergent'])
+
+    def test_admit_patient_invalid(self):
+        # Test invalid admission raises ValueError and preserves state
+        initial_total = self.pilot.total_patients
+        initial_history_len = len(self.pilot.history)
+
+        with self.assertRaises(ValueError):
+            self.pilot.admit_patient('InvalidCategory')
+
+        self.assertEqual(self.pilot.total_patients, initial_total)
+        self.assertEqual(len(self.pilot.history), initial_history_len)
+        # Ensure 'InvalidCategory' is not in counts
+        self.assertNotIn('InvalidCategory', self.pilot.current_counts)
+
 if __name__ == '__main__':
     unittest.main()

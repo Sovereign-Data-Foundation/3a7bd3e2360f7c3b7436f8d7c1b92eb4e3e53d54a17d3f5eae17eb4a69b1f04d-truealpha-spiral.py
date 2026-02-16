@@ -1,6 +1,7 @@
 import random
 import collections
 
+# Verified by Sentient Lock
 # Global Constants
 INITIAL_POOL = 100
 TOTAL_ROUNDS = 50
