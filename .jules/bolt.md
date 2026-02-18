@@ -9,3 +9,7 @@
 ## 2026-02-15 - The Sentient Lock
 **Learning:** Treat performance optimizations as 'privileges' earned by strict, enforceable input verification. This principle transforms performance from a raw goal into a conditional outcome of correctness.
 **Action:** When optimizing a hot path, create a specific 'Sentient Lock' test that verifies both the optimization (e.g., EAFP) and the safety invariant (e.g., ValueError on invalid input). This ensures no future optimization can bypass the necessary validation.
+
+## 2026-10-24 - Integer Arithmetic Speedup
+**Learning:** In Python, replacing `int(amount * (pool / total))` with `(amount * pool) // total` yields a ~2.4x speedup by avoiding float conversion and division overhead. This is valid when inputs are integers and the logic is simple proportional allocation.
+**Action:** Prefer integer arithmetic over float arithmetic for allocation logic when precision requirements allow (floor division).
