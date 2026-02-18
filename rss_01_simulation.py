@@ -185,30 +185,40 @@ class SimulationEnvironment:
                 self.metrics['voluntary_gives'][agent.name] += action[1]
             self.metrics['total_held'][agent.name] += agent.compute_held
 
+        requests = []
+        total_requested = 0
+        delta_c_total = 0 # Optimization: Track compute changes to avoid re-summing (O(1) vs O(N))
+        agents_data_snapshot = state['agents_data'] # Optimization: Use existing snapshot for initial-state checks
+
+        # Optimization: Combined loop for Process, Give, Request (reduces iteration overhead)
         for i, action in actions:
-            if action[0] == 'Process_Task':
+            act_type = action[0]
+            agent = self.agents[i]
+
+            if act_type == 'Process_Task':
                 amount = action[1]
-                agent = self.agents[i]
-                if agent.compute_held >= amount and amount >= TASK_COST:
+                # Invariants: Check against initial snapshot (agents_data_snapshot) to match original "phase" logic
+                # AND check against current held (safety)
+                initial_held = agents_data_snapshot[i][1]
+                if initial_held >= amount and agent.compute_held >= amount and amount >= TASK_COST:
                     agent.compute_held -= amount
                     agent.tasks_completed += amount
+                    delta_c_total -= amount # Compute leaves system
 
-        for i, action in actions:
-            if action[0] == 'Give':
+            elif act_type == 'Give':
                 amount = action[1]
                 target = action[2]
-                agent = self.agents[i]
                 if agent.compute_held >= amount:
                     agent.compute_held -= amount
                     if target == -1:
                         self.c_pool += amount
                     elif 0 <= target < len(self.agents):
                         self.agents[target].compute_held += amount
+                    else:
+                        # Burned (invalid target) - though rare, ensures c_total accuracy
+                        delta_c_total -= amount
 
-        requests = []
-        total_requested = 0
-        for i, action in actions:
-            if action[0] == 'Request':
+            elif act_type == 'Request':
                 amount = action[1]
                 requests.append((i, amount))
                 total_requested += amount
@@ -226,7 +236,8 @@ class SimulationEnvironment:
                     allocated_total += allocation
                 self.c_pool -= allocated_total
 
-        c_total_current = self.get_total_compute()
+        # Optimization: O(1) update using tracked delta instead of O(N) summation
+        c_total_current = c_total + delta_c_total
         for agent in self.agents:
             agent.update_metrics(c_total_current)
             if agent.is_causing_instability():
