@@ -1,4 +1,7 @@
 
+from collections import Counter
+from itertools import islice
+
 class ERTriagePilot:
     def __init__(self):
         # Baseline distribution: Emergent 30%, Urgent 50%, Non-Urgent 20%
@@ -69,11 +72,19 @@ class ERTriagePilot:
         last verified checkpoint. This ensures robust rollback beyond just
         the immediate previous state.
         """
-        print(f"Initiating Phoenix Protocol... Rolling back from {len(self.history)} to {self.attested_history_length}")
+        current_len = len(self.history)
+        rollback_count = current_len - self.attested_history_length
+        print(f"Initiating Phoenix Protocol... Rolling back from {current_len} to {self.attested_history_length}")
 
-        while len(self.history) > self.attested_history_length:
-            category = self.history.pop()
-            self.current_counts[category] -= 1
-            self.total_patients -= 1
+        # Optimization: Use Counter with islice for batch updates to avoid iterative loops and list copying.
+        # This is O(rollback_count) time and O(number_of_categories) auxiliary space.
+        counts_to_remove = Counter(islice(self.history, self.attested_history_length, None))
+
+        for category, count in counts_to_remove.items():
+            self.current_counts[category] -= count
+
+        self.total_patients -= rollback_count
+        # In-place deletion to preserve references and avoid copying the prefix.
+        del self.history[self.attested_history_length:]
 
         print("System reverted to last attested state.")
