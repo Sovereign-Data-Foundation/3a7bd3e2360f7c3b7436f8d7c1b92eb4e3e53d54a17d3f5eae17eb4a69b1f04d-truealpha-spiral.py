@@ -1,4 +1,7 @@
 
+from collections import Counter
+from itertools import islice
+
 class ERTriagePilot:
     def __init__(self):
         # Baseline distribution: Emergent 30%, Urgent 50%, Non-Urgent 20%
@@ -71,9 +74,28 @@ class ERTriagePilot:
         """
         print(f"Initiating Phoenix Protocol... Rolling back from {len(self.history)} to {self.attested_history_length}")
 
-        while len(self.history) > self.attested_history_length:
-            category = self.history.pop()
-            self.current_counts[category] -= 1
-            self.total_patients -= 1
+        if len(self.history) <= self.attested_history_length:
+            return
+
+        # Optimization: Use slice counting and bulk update
+        # Slice list from attested point to end
+        # We use islice to avoid copying the list if we can, but Counter needs an iterable.
+        # list slicing creates a copy.
+        # For memory efficiency with huge lists, itertools.islice is better.
+
+        # Calculate total reduction upfront
+        rollback_amount = len(self.history) - self.attested_history_length
+        self.total_patients -= rollback_amount
+
+        # Using islice to avoid full list copy
+        rollback_slice = islice(self.history, self.attested_history_length, None)
+        rollback_counts = Counter(rollback_slice)
+
+        for category, count in rollback_counts.items():
+            if category in self.current_counts:
+                self.current_counts[category] -= count
+
+        # Truncate history in place
+        del self.history[self.attested_history_length:]
 
         print("System reverted to last attested state.")
