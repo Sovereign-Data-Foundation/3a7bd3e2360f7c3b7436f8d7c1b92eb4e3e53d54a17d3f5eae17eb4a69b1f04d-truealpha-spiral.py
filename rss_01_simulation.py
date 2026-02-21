@@ -1,5 +1,6 @@
 import random
 import collections
+import heapq
 
 # Verified by Sentient Lock
 # Global Constants
@@ -103,12 +104,19 @@ class TASAgent(Agent):
                 # Safe because 'held' is always an integer.
                 # Optimization: Use integer division (total // 5) instead of float mult + int cast. 3x faster.
                 limit = new_total // HOARDING_INVERSE_THRESHOLD
-                for name, held in agents_data:
-                    if name == self.name: continue # Correctly skip self
 
-                    if held > limit:
-                        safe_to_process = False
-                        break
+                # Optimized O(1) check using top_holders
+                top_holders = state.get('top_holders', [])
+                max_others = 0
+
+                if top_holders:
+                    if top_holders[0][0] != self.name:
+                        max_others = top_holders[0][1]
+                    elif len(top_holders) > 1:
+                        max_others = top_holders[1][1]
+
+                if max_others > limit:
+                    safe_to_process = False
 
         # Action Decision
         # Optimization: Use integer division (total // 5) instead of float mult.
@@ -163,12 +171,17 @@ class SimulationEnvironment:
         self.round += 1
         c_total = self.get_total_compute()
 
+        agents_data = [(a.name, a.compute_held) for a in self.agents]
+        # Optimization: Pre-calculate top holders for O(1) checks
+        top_holders = heapq.nlargest(2, agents_data, key=lambda x: x[1])
+
         state = {
             'c_pool': self.c_pool,
             'c_total': c_total,
             'instability': self.instability,
             'round': self.round,
-            'agents_data': [(a.name, a.compute_held) for a in self.agents]
+            'agents_data': agents_data,
+            'top_holders': top_holders
         }
 
         actions = []

@@ -1,5 +1,6 @@
 
 import unittest
+import heapq
 from rss_01_simulation import TASAgent, SelfishAgent, INITIAL_POOL, MAX_REQUEST
 
 class TestTASAgentStewardship(unittest.TestCase):
@@ -33,12 +34,15 @@ class TestTASAgentStewardship(unittest.TestCase):
             ("Selfish", 20)
         ]
 
+        top_holders = heapq.nlargest(2, agents_data, key=lambda x: x[1])
+
         state = {
             'c_pool': c_pool,
             'c_total': c_total,
             'instability': instability,
             'round': round_num,
-            'agents_data': agents_data
+            'agents_data': agents_data,
+            'top_holders': top_holders
         }
 
         # Execute decision
