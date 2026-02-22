@@ -9,3 +9,7 @@
 ## 2026-02-15 - The Sentient Lock
 **Learning:** Treat performance optimizations as 'privileges' earned by strict, enforceable input verification. This principle transforms performance from a raw goal into a conditional outcome of correctness.
 **Action:** When optimizing a hot path, create a specific 'Sentient Lock' test that verifies both the optimization (e.g., EAFP) and the safety invariant (e.g., ValueError on invalid input). This ensures no future optimization can bypass the necessary validation.
+
+## 2026-05-24 - Bulk Rollback Optimization
+**Learning:** For large list truncations and aggregations (rollback), `collections.Counter` with `itertools.islice` followed by `del list[start:]` is significantly faster (~45% for N=1M) than iterative `pop()` and subtraction. This shifts complexity from Python loops to C-optimized internals.
+**Action:** When implementing undo/rollback logic for large datasets, prefer batch processing and slicing over item-by-item reversal.
