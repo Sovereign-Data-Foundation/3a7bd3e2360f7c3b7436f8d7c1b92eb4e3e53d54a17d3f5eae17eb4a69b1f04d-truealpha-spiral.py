@@ -17,11 +17,12 @@ class ERTriagePilot:
         self.attested_history_length = 0
 
     def admit_patient(self, category):
-        # Optimization: Use EAFP (try-except) to avoid redundant key lookup.
-        # This is faster than 'if category not in self.baseline' for valid inputs.
-        try:
+        # Optimization: Use LBYL (Look Before You Leap) for adversarial resilience.
+        # While EAFP is slightly faster for valid inputs, LBYL provides 'Refusal at the Transition Level',
+        # preventing the cost of exception handling during invalid input attacks (The Inward Path).
+        if category in self.current_counts:
             self.current_counts[category] += 1
-        except KeyError:
+        else:
             raise ValueError(f"Invalid category: {category}")
 
         # Save delta for potential rollback
