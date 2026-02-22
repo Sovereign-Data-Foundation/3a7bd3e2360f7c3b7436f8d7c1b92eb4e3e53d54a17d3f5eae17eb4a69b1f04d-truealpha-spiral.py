@@ -1,4 +1,7 @@
 
+import collections
+import itertools
+
 class ERTriagePilot:
     def __init__(self):
         # Baseline distribution: Emergent 30%, Urgent 50%, Non-Urgent 20%
@@ -14,11 +17,12 @@ class ERTriagePilot:
         self.attested_history_length = 0
 
     def admit_patient(self, category):
-        # Optimization: Use EAFP (try-except) to avoid redundant key lookup.
-        # This is faster than 'if category not in self.baseline' for valid inputs.
-        try:
+        # Optimization: Use LBYL (Look Before You Leap) for adversarial resilience.
+        # While EAFP is slightly faster for valid inputs, LBYL provides 'Refusal at the Transition Level',
+        # preventing the cost of exception handling during invalid input attacks (The Inward Path).
+        if category in self.current_counts:
             self.current_counts[category] += 1
-        except KeyError:
+        else:
             raise ValueError(f"Invalid category: {category}")
 
         # Save delta for potential rollback
@@ -71,9 +75,21 @@ class ERTriagePilot:
         """
         print(f"Initiating Phoenix Protocol... Rolling back from {len(self.history)} to {self.attested_history_length}")
 
-        while len(self.history) > self.attested_history_length:
-            category = self.history.pop()
-            self.current_counts[category] -= 1
-            self.total_patients -= 1
+        start = self.attested_history_length
+        # Optimization: Use Counter and islice to batch update counts.
+        # This is faster than popping items one by one in a Python loop.
+        if start < len(self.history):
+             # islice avoids copying the sublist, but Counter still iterates over it.
+             # However, Counter is implemented in C.
+             to_remove = collections.Counter(itertools.islice(self.history, start, None))
+             for category, count in to_remove.items():
+                 self.current_counts[category] -= count
+
+             # Adjust total patients
+             removed_count = len(self.history) - start
+             self.total_patients -= removed_count
+
+             # Fast list truncation
+             del self.history[start:]
 
         print("System reverted to last attested state.")

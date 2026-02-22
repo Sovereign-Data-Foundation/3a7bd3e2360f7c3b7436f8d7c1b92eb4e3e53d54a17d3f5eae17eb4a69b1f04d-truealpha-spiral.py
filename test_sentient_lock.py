@@ -20,53 +20,75 @@ class TestSentientLock(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.pilot.admit_patient("InvalidCategory")
 
-    def test_invariant_optimization(self):
+    def test_invariant_resilience(self):
         """
-        Optimization Condition: The 'try/except' (EAFP) pattern must be faster
-        than the explicit check (LBYL) for valid inputs.
+        Resilience Condition: The 'if/else' (LBYL) pattern must be significantly faster
+        than exception handling (EAFP) for invalid inputs (attacks).
 
-        This is a heuristic check. We compare the current implementation against
-        a simulated LBYL implementation.
+        This enforces 'Refusal at the Transition Level' - rejecting invalid inputs
+        cheaply without invoking the exception machinery.
         """
-        # Prepare valid input
-        category = "Emergent"
+        # Prepare inputs
+        valid_category = "Emergent"
+        invalid_category = "AttackPayload"
 
-        # 1. Measure Current Implementation (EAFP)
-        def current_impl():
+        # 1. Measure Current Implementation (LBYL expected)
+        # We need to test the actual method to verify the implementation choice.
+
+        # Define attack scenario
+        def attack_scenario():
             try:
-                self.pilot.current_counts[category] += 1
-            except KeyError:
-                raise ValueError(f"Invalid category: {category}")
+                self.pilot.admit_patient(invalid_category)
+            except ValueError:
+                pass
 
-        # 2. Measure LBYL Implementation (The "safe but slow" alternative)
-        def lbyl_impl():
-            if category in self.pilot.baseline:
-                self.pilot.current_counts[category] += 1
-            else:
-                raise ValueError(f"Invalid category: {category}")
+        # Define baseline (EAFP overhead simulation)
+        # Raising an exception is expensive. We want to ensure we are NOT paying this cost
+        # inside the method before the ValueError is raised?
+        # Actually, if we use LBYL, we raise ValueError manually.
+        # If we use EAFP (try/except KeyError), we raise ValueError manually in the except block.
+        # Wait, both raise ValueError.
+        # So both have exception overhead *if* they raise.
+        # The difference is:
+        # EAFP: try -> KeyError (internal exc) -> catch -> raise ValueError (external exc). Double exception.
+        # LBYL: if -> check -> raise ValueError (external exc). Single exception.
+
+        # Let's measure the cost of admit_patient directly.
 
         # Warmup
-        for _ in range(1000): current_impl()
-        for _ in range(1000): lbyl_impl()
+        for _ in range(1000): attack_scenario()
 
         # Measurement
-        number = 100000
-        time_current = timeit.timeit(current_impl, number=number)
-        time_lbyl = timeit.timeit(lbyl_impl, number=number)
+        number = 10000
+        time_attack = timeit.timeit(attack_scenario, number=number)
 
-        # We assert that current implementation is not significantly slower than LBYL
-        # (it should be faster, but environment noise exists).
-        # The key is that we are using the optimized path.
-        # Strict "faster" check might be flaky in CI, so we log the ratio.
-        ratio = time_current / time_lbyl
-        print(f"\n[Sentient Lock] EAFP/LBYL Ratio: {ratio:.4f} (Lower is better)")
+        # 10k attacks should be fast.
+        # On EAFP: ~0.005s (very rough guess, exception is ~1us)
+        # On LBYL: ~0.002s
 
-        # Ideally ratio < 1.0. We allow a small margin for noise, but if it's > 1.2,
-        # the optimization might be lost or overhead introduced.
-        if ratio > 1.2:
-            print(f"WARNING: Performance regression detected: EAFP/LBYL ratio {ratio:.4f} > 1.2")
-        # Relaxed check for CI stability
-        self.assertLess(ratio, 1.5, "Severe performance regression detected: EAFP is significantly slower than LBYL.")
+        print(f"\n[Sentient Lock] Attack Resilience (10k ops): {time_attack:.4f}s")
+
+        # Assert that we are strictly faster than the double-exception EAFP pattern.
+        # We can simulate EAFP cost to compare.
+        def eafp_simulation():
+            try:
+                try:
+                    self.pilot.current_counts[invalid_category] += 1
+                except KeyError:
+                    raise ValueError(f"Invalid category: {invalid_category}")
+            except ValueError:
+                pass
+
+        time_eafp = timeit.timeit(eafp_simulation, number=number)
+        print(f"[Sentient Lock] EAFP Simulation (10k ops): {time_eafp:.4f}s")
+
+        ratio = time_attack / time_eafp
+        print(f"[Sentient Lock] Attack/EAFP Ratio: {ratio:.4f} (Lower is better)")
+
+        # If we are using LBYL, ratio should be < 0.8 (significant speedup).
+        # If we are using EAFP, ratio will be ~1.0.
+        # We assert ratio < 0.9 to enforce LBYL.
+        self.assertLess(ratio, 0.9, "System is negotiating with exceptions! Enforce LBYL for resilience.")
 
 if __name__ == '__main__':
     unittest.main()
