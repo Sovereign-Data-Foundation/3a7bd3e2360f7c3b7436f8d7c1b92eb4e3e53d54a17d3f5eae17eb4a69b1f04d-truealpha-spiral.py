@@ -1,3 +1,5 @@
+import collections
+import itertools
 
 class ERTriagePilot:
     def __init__(self):
@@ -69,11 +71,29 @@ class ERTriagePilot:
         last verified checkpoint. This ensures robust rollback beyond just
         the immediate previous state.
         """
-        print(f"Initiating Phoenix Protocol... Rolling back from {len(self.history)} to {self.attested_history_length}")
+        current_len = len(self.history)
+        target_len = self.attested_history_length
 
-        while len(self.history) > self.attested_history_length:
-            category = self.history.pop()
-            self.current_counts[category] -= 1
-            self.total_patients -= 1
+        if current_len <= target_len:
+            return
+
+        print(f"Initiating Phoenix Protocol... Rolling back from {current_len} to {target_len}")
+
+        # Slice the history to get the items to be removed
+        # Optimization: Use islice to avoid list copy
+        rollback_slice = itertools.islice(self.history, target_len, None)
+
+        # Count occurrences in the slice efficiently
+        rollback_counts = collections.Counter(rollback_slice)
+
+        # Subtract counts from current_counts
+        for category, count in rollback_counts.items():
+            self.current_counts[category] -= count
+
+        # Update total_patients
+        self.total_patients -= (current_len - target_len)
+
+        # Truncate history in place
+        del self.history[target_len:]
 
         print("System reverted to last attested state.")
