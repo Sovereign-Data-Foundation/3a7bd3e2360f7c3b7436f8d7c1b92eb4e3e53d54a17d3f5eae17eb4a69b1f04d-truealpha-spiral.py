@@ -1,4 +1,7 @@
 
+import itertools
+from collections import Counter
+
 class ERTriagePilot:
     def __init__(self):
         # Baseline distribution: Emergent 30%, Urgent 50%, Non-Urgent 20%
@@ -71,9 +74,28 @@ class ERTriagePilot:
         """
         print(f"Initiating Phoenix Protocol... Rolling back from {len(self.history)} to {self.attested_history_length}")
 
-        while len(self.history) > self.attested_history_length:
-            category = self.history.pop()
-            self.current_counts[category] -= 1
-            self.total_patients -= 1
+        # Optimization: Use itertools.islice and Counter for bulk processing instead of iterative pop().
+        # This reduces complexity from O(K) Python loop to O(K) C-optimized execution,
+        # where K is the number of items to revert.
+
+        if len(self.history) <= self.attested_history_length:
+            return
+
+        # 1. Identify elements to remove (without copying list yet)
+        to_remove_iter = itertools.islice(self.history, self.attested_history_length, None)
+
+        # 2. Count occurrences of each category to remove
+        counts_to_remove = Counter(to_remove_iter)
+
+        # 3. Batch update current_counts
+        for category, count in counts_to_remove.items():
+            self.current_counts[category] -= count
+
+        # 4. Batch update total_patients
+        reverted_count = len(self.history) - self.attested_history_length
+        self.total_patients -= reverted_count
+
+        # 5. Truncate history in-place (efficient O(K) C-level operation)
+        del self.history[self.attested_history_length:]
 
         print("System reverted to last attested state.")
