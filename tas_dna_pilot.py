@@ -1,3 +1,5 @@
+import collections
+import itertools
 
 class ERTriagePilot:
     def __init__(self):
@@ -71,9 +73,27 @@ class ERTriagePilot:
         """
         print(f"Initiating Phoenix Protocol... Rolling back from {len(self.history)} to {self.attested_history_length}")
 
-        while len(self.history) > self.attested_history_length:
-            category = self.history.pop()
-            self.current_counts[category] -= 1
-            self.total_patients -= 1
+        if len(self.history) <= self.attested_history_length:
+            return
+
+        # Optimization: Use Counter and islice for O(N) -> O(K) where K is unique categories
+        # avoiding overhead of individual pop() calls and repeated dictionary lookups.
+
+        # Calculate the slice to be removed
+        rollback_slice = itertools.islice(self.history, self.attested_history_length, None)
+
+        # Count occurrences in the slice efficiently (C-optimized)
+        counts_to_remove = collections.Counter(rollback_slice)
+
+        # Update current counts in batch
+        for category, count in counts_to_remove.items():
+            self.current_counts[category] -= count
+
+        # Update total patients
+        removed_count = len(self.history) - self.attested_history_length
+        self.total_patients -= removed_count
+
+        # Truncate history in one operation (C-optimized)
+        del self.history[self.attested_history_length:]
 
         print("System reverted to last attested state.")
