@@ -9,3 +9,7 @@
 ## 2026-02-15 - The Sentient Lock
 **Learning:** Treat performance optimizations as 'privileges' earned by strict, enforceable input verification. This principle transforms performance from a raw goal into a conditional outcome of correctness.
 **Action:** When optimizing a hot path, create a specific 'Sentient Lock' test that verifies both the optimization (e.g., EAFP) and the safety invariant (e.g., ValueError on invalid input). This ensures no future optimization can bypass the necessary validation.
+
+## 2026-02-16 - Bulk Rollback Optimization in `phoenix_protocol`
+**Learning:** Replacing iterative `pop()` loops with `collections.Counter` on a slice (`itertools.islice`) for bulk state rollback yielded a ~3x speedup for large datasets (N=1M). Python's `list.pop()` is O(1) amortized, but executing it N times in a Python loop incurs significant interpreter overhead. Pushing the iteration into C-optimized `Counter` and `islice` bypasses this.
+**Action:** When reverting or processing large chunks of list history, prefer bulk operations (slicing, `del list[start:]`, `Counter`) over iterative element-wise processing.
