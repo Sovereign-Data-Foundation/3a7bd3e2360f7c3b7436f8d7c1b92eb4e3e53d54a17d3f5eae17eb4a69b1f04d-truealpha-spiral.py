@@ -1,3 +1,5 @@
+import collections
+import itertools
 
 class ERTriagePilot:
     def __init__(self):
@@ -71,9 +73,20 @@ class ERTriagePilot:
         """
         print(f"Initiating Phoenix Protocol... Rolling back from {len(self.history)} to {self.attested_history_length}")
 
-        while len(self.history) > self.attested_history_length:
-            category = self.history.pop()
-            self.current_counts[category] -= 1
-            self.total_patients -= 1
+        # Optimization: Use Counter and islice for fast bulk rollback
+        # shifting complexity to C-optimized internals instead of popping iteratively.
+        if len(self.history) <= self.attested_history_length:
+            return
+
+        start = self.attested_history_length
+        rollback_count = len(self.history) - start
+
+        to_remove = collections.Counter(itertools.islice(self.history, start, None))
+
+        for category, count in to_remove.items():
+            self.current_counts[category] -= count
+
+        self.total_patients -= rollback_count
+        del self.history[start:]
 
         print("System reverted to last attested state.")
