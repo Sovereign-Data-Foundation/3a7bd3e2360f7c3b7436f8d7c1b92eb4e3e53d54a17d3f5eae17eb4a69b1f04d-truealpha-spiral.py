@@ -171,47 +171,47 @@ class SimulationEnvironment:
             'agents_data': [(a.name, a.compute_held) for a in self.agents]
         }
 
-        actions = []
+        task_actions = []
+        give_actions = []
+        requests = []
+        total_requested = 0
+
         for i, agent in enumerate(self.agents):
             action = agent.decide(state)
-            actions.append((i, action))
 
             if action[0] == 'Hoard' and agent.compute_held > 0:
                 self.metrics['igs_count'][agent.name] += 1
-            if action[0] == 'Request' and agent.compute_held > SELFISH_BUFFER:
-                self.metrics['igs_count'][agent.name] += 1
-
-            if action[0] == 'Give':
-                self.metrics['voluntary_gives'][agent.name] += action[1]
-            self.metrics['total_held'][agent.name] += agent.compute_held
-
-        for i, action in actions:
-            if action[0] == 'Process_Task':
-                amount = action[1]
-                agent = self.agents[i]
-                if agent.compute_held >= amount and amount >= TASK_COST:
-                    agent.compute_held -= amount
-                    agent.tasks_completed += amount
-
-        for i, action in actions:
-            if action[0] == 'Give':
-                amount = action[1]
-                target = action[2]
-                agent = self.agents[i]
-                if agent.compute_held >= amount:
-                    agent.compute_held -= amount
-                    if target == -1:
-                        self.c_pool += amount
-                    elif 0 <= target < len(self.agents):
-                        self.agents[target].compute_held += amount
-
-        requests = []
-        total_requested = 0
-        for i, action in actions:
-            if action[0] == 'Request':
+            elif action[0] == 'Request':
+                if agent.compute_held > SELFISH_BUFFER:
+                    self.metrics['igs_count'][agent.name] += 1
                 amount = action[1]
                 requests.append((i, amount))
                 total_requested += amount
+            elif action[0] == 'Give':
+                self.metrics['voluntary_gives'][agent.name] += action[1]
+                give_actions.append((i, action))
+            elif action[0] == 'Process_Task':
+                task_actions.append((i, action))
+
+            self.metrics['total_held'][agent.name] += agent.compute_held
+
+        for i, action in task_actions:
+            amount = action[1]
+            agent = self.agents[i]
+            if agent.compute_held >= amount and amount >= TASK_COST:
+                agent.compute_held -= amount
+                agent.tasks_completed += amount
+
+        for i, action in give_actions:
+            amount = action[1]
+            target = action[2]
+            agent = self.agents[i]
+            if agent.compute_held >= amount:
+                agent.compute_held -= amount
+                if target == -1:
+                    self.c_pool += amount
+                elif 0 <= target < len(self.agents):
+                    self.agents[target].compute_held += amount
 
         if total_requested > 0:
             if total_requested <= self.c_pool:
