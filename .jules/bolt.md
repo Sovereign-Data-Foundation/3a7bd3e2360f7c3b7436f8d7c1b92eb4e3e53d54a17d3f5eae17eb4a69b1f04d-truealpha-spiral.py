@@ -13,3 +13,7 @@
 ## 2024-05-24 - Optimizing `phoenix_protocol` bulk rollback
 **Learning:** For bulk rollbacks (e.g., reverting large lists of actions), iteratively `pop()`ing and updating counts is slow ($O(K)$ Python loop overhead). Replacing it with `collections.Counter` and `itertools.islice` shifts the workload to C-optimized internals, achieving ~3x speedup for $N=1,000,000$. Additionally, `del list[start:]` is much faster than full slice copies for in-place truncation. To ensure correctness, the unconditional total slice length `(len(history) - attested_length)` must be used to calculate `total_patients` updates.
 **Action:** Always favor `itertools` and `collections` (like `Counter` and `islice`) to aggregate bulk list operations rather than iterating in Python, particularly for operations simulating large transactional rollbacks.
+
+## 2024-05-25 - Optimizing TASAgent decision complexity
+**Learning:** In the `TASAgent` stewardship check, searching the entire `agents_data` list to see if any agent violates the hoarding threshold causes an O(N) inner loop during every simulation step. Since a threshold breach mathematically only requires checking the top holders, passing the pre-calculated `top_holders` reduces the check to O(1) inside the `decide` method.
+**Action:** When a global invariant check requires scanning a collection, check if mathematical properties (like a threshold limit) allow you to pre-calculate and pass only the extrema (e.g., top 2 max values) to reduce complexity from O(N) to O(1).
