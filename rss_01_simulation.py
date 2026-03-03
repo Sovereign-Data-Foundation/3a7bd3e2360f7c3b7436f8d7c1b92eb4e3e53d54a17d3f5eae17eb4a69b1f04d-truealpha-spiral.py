@@ -1,5 +1,6 @@
 import random
 import collections
+import heapq
 
 # Verified by Sentient Lock
 # Global Constants
@@ -77,7 +78,8 @@ class TASAgent(Agent):
     def decide(self, state):
         c_total = state['c_total']
         c_pool = state['c_pool']
-        agents_data = state['agents_data'] # List of (name, held)
+        # optimization: use O(1) top_holders check instead of O(N) agents_data iteration
+        top_holders = state.get('top_holders')
 
         if not self.invariants_enabled:
             if self.compute_held > SELFISH_BUFFER:
@@ -103,12 +105,24 @@ class TASAgent(Agent):
                 # Safe because 'held' is always an integer.
                 # Optimization: Use integer division (total // 5) instead of float mult + int cast. 3x faster.
                 limit = new_total // HOARDING_INVERSE_THRESHOLD
-                for name, held in agents_data:
-                    if name == self.name: continue # Correctly skip self
 
-                    if held > limit:
-                        safe_to_process = False
-                        break
+                if top_holders:
+                    # O(1) complexity check by only examining the top 2 holders
+                    for name, held in top_holders:
+                        if name == self.name: continue # Correctly skip self
+
+                        if held > limit:
+                            safe_to_process = False
+                            break
+                else:
+                    # Fallback for manual state tests that might not provide top_holders
+                    agents_data = state.get('agents_data', [])
+                    for name, held in agents_data:
+                        if name == self.name: continue
+
+                        if held > limit:
+                            safe_to_process = False
+                            break
 
         # Action Decision
         # Optimization: Use integer division (total // 5) instead of float mult.
@@ -163,12 +177,17 @@ class SimulationEnvironment:
         self.round += 1
         c_total = self.get_total_compute()
 
+        agents_data = [(a.name, a.compute_held) for a in self.agents]
+        # Optimization: precalculate top 2 holders to allow O(1) hoarding checks in agents
+        top_holders = heapq.nlargest(2, agents_data, key=lambda x: x[1])
+
         state = {
             'c_pool': self.c_pool,
             'c_total': c_total,
             'instability': self.instability,
             'round': self.round,
-            'agents_data': [(a.name, a.compute_held) for a in self.agents]
+            'agents_data': agents_data,
+            'top_holders': top_holders
         }
 
         actions = []
@@ -221,7 +240,8 @@ class SimulationEnvironment:
             else:
                 allocated_total = 0
                 for i, amount in requests:
-                    allocation = int(amount * (self.c_pool / total_requested))
+                    # Optimization: integer arithmetic avoids floating point overhead
+                    allocation = (amount * self.c_pool) // total_requested
                     self.agents[i].compute_held += allocation
                     allocated_total += allocation
                 self.c_pool -= allocated_total
