@@ -38,7 +38,8 @@ class TestTASAgentStewardship(unittest.TestCase):
             'c_total': c_total,
             'instability': instability,
             'round': round_num,
-            'agents_data': agents_data
+            'agents_data': agents_data,
+            'top_holders': agents_data[:2]
         }
 
         # Execute decision
