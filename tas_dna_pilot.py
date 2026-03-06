@@ -43,10 +43,10 @@ class ERTriagePilot:
 
         # TVD = 0.5 * sum(|P(x) - Q(x)|)
         l1_distance = 0.0
-        for category, baseline_prob in self.baseline.items():
+        for category in self.baseline:
             # Optimized: Direct dict access is faster than .get()
             current_prob = self.current_counts[category] / self.total_patients
-            l1_distance += abs(current_prob - baseline_prob)
+            l1_distance += abs(current_prob - self.baseline[category])
 
         return 0.5 * l1_distance
 
