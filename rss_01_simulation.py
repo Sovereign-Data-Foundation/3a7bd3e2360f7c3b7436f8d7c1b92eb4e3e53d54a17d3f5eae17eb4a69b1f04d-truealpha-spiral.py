@@ -226,7 +226,8 @@ class SimulationEnvironment:
             else:
                 allocated_total = 0
                 for i, amount in requests:
-                    allocation = int(amount * (self.c_pool / total_requested))
+                    # Optimization: Integer arithmetic prevents float conversion overhead
+                    allocation = (amount * self.c_pool) // total_requested
                     self.agents[i].compute_held += allocation
                     allocated_total += allocation
                 self.c_pool -= allocated_total
