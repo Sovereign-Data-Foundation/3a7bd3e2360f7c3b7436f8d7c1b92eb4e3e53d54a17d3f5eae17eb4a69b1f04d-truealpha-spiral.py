@@ -19,7 +19,13 @@ def airlock_gate(coherence, resonance):
     """
     # Cost function: (1 - Coherence) * e^Resonance
     # Low Coherence (Fabrication) + High Resonance (Big Idea) -> High Cost
-    cost = (1.0 - coherence) * math.exp(resonance)
+    # Optimization: Bypass expensive math.exp and prevent OverflowError
+    if coherence >= 1.0:
+        cost = 0.0
+    elif resonance > 709.0:
+        cost = float('inf')
+    else:
+        cost = (1.0 - coherence) * math.exp(resonance)
 
     if cost > MAX_ENERGY_COST:
         return AIRLOCK_DENIED_ENERGY_COST_TOO_HIGH, cost
