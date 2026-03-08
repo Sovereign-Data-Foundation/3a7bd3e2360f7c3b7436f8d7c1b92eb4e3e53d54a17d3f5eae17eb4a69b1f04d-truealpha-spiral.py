@@ -17,3 +17,7 @@
 ## 2026-02-15 - Optimize TASAgent Stewardship check to O(1)
 **Learning:** Mathematical properties can optimize global invariant checks: pre-calculating and passing only the extrema (e.g., top 2 max values via `heapq.nlargest`) reduces inner loop complexity from O(N) to O(1).
 **Action:** When performing global checks against limits in a loop, pre-calculate the extremes outside the loop rather than evaluating every item inside.
+
+## 2024-05-25 - Optimization of TASAgent top holders selection
+**Learning:** For small lists ($N=5$), `heapq.nlargest` is over 2x slower than native `list.sort(reverse=True)` and slicing due to Python's initialization overhead of turning the iterable into a heap.
+**Action:** Use native sorting instead of `heapq.nlargest` when selecting the top items from small lists in Python for better performance.
