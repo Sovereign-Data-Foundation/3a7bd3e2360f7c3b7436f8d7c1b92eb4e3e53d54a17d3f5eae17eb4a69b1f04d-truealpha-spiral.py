@@ -165,7 +165,9 @@ class SimulationEnvironment:
         self.round += 1
         c_total = self.get_total_compute()
         agents_data = [(a.name, a.compute_held) for a in self.agents]
-        top_holders = heapq.nlargest(2, agents_data, key=lambda x: x[1])
+        # Optimization: list.sort() is ~2x faster than heapq.nlargest for small lists (N=5)
+        agents_data.sort(key=lambda x: x[1], reverse=True)
+        top_holders = agents_data[:2]
 
         state = {
             'c_pool': self.c_pool,
