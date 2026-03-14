@@ -224,7 +224,7 @@ class SimulationEnvironment:
             if total_requested <= self.c_pool:
                 for i, amount in requests:
                     self.agents[i].compute_held += amount
-                    self.c_pool -= amount
+                self.c_pool -= total_requested
             else:
                 allocated_total = 0
                 for i, amount in requests:
