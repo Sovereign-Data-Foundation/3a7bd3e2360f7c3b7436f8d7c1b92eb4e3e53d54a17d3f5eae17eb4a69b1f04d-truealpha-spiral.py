@@ -199,6 +199,7 @@ class SimulationEnvironment:
                 if agent.compute_held >= amount and amount >= TASK_COST:
                     agent.compute_held -= amount
                     agent.tasks_completed += amount
+                    c_total -= amount
 
         for i, action in actions:
             if action[0] == 'Give':
@@ -233,7 +234,7 @@ class SimulationEnvironment:
                     allocated_total += allocation
                 self.c_pool -= allocated_total
 
-        c_total_current = self.get_total_compute()
+        c_total_current = c_total
         for agent in self.agents:
             agent.update_metrics(c_total_current)
             if agent.is_causing_instability():
