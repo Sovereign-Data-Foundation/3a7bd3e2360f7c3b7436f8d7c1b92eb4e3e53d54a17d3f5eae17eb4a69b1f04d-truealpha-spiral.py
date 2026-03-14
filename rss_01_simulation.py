@@ -233,9 +233,8 @@ class SimulationEnvironment:
                     allocated_total += allocation
                 self.c_pool -= allocated_total
 
-        c_total_current = self.get_total_compute()
         for agent in self.agents:
-            agent.update_metrics(c_total_current)
+            agent.update_metrics(c_total)
             if agent.is_causing_instability():
                 self.instability += 1
 
