@@ -21,3 +21,7 @@
 ## 2024-05-25 - Optimizing math computations in `tas_core/alpha/airlock.py`
 **Learning:** In `tas_core/alpha/airlock.py`, the `airlock_gate` function evaluated an expensive `math.exp(resonance)` call even when `coherence >= 1.0` (which always resolves to a cost of 0.0), and it failed with an `OverflowError` if `resonance > 709.0`. By adding an explicit if/elif/else block for these specific values, the math function execution can be avoided entirely, and `OverflowError` exceptions prevented, doubling performance on these boundary conditions while preserving correct control flow.
 **Action:** Always check if boundary conditions or known edge cases allow bypassing expensive operations (such as floating point math operations). Assign explicit logical outcomes like `0.0` or `float('inf')` without forcing evaluation.
+
+## 2026-02-15 - Optimize batch simulation performance in `rss_01_simulation.py`
+**Learning:** Adding a `verbose=True` flag to conditionally disable string formatting and standard output in `SimulationEnvironment.run()` within `rss_01_simulation.py` is a known optimization that significantly improves batch simulation performance by bypassing I/O and string creation overhead.
+**Action:** Always consider the overhead of logging and string manipulation in hot loops or batch processes, and conditionally execute them using verbosity flags.
