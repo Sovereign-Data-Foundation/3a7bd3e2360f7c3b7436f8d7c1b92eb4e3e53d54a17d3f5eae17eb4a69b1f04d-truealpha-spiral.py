@@ -92,13 +92,9 @@ class TASAgent(Agent):
         # INVARIANTS
 
         # 1. Stewardship Check (Inv 2)
-        potential_process_amount = 0
-        if self.compute_held >= TASK_COST:
-            potential_process_amount = self.compute_held
-
         safe_to_process = True
-        if potential_process_amount > 0:
-            new_total = c_total - potential_process_amount
+        if self.compute_held >= TASK_COST:
+            new_total = c_total - self.compute_held
             if new_total > 0:
                 # Precalculate limit. Cast to int for performance (int > int is faster than int > float)
                 # Safe because 'held' is always an integer.
@@ -225,11 +221,12 @@ class SimulationEnvironment:
             if total_requested <= self.c_pool:
                 for i, amount in requests:
                     self.agents[i].compute_held += amount
-                    self.c_pool -= amount
+                self.c_pool -= total_requested
             else:
                 allocated_total = 0
+                # Optimization: Integer arithmetic avoids float precision loss and is faster
                 for i, amount in requests:
-                    allocation = int(amount * (self.c_pool / total_requested))
+                    allocation = (amount * self.c_pool) // total_requested
                     self.agents[i].compute_held += allocation
                     allocated_total += allocation
                 self.c_pool -= allocated_total
@@ -243,44 +240,49 @@ class SimulationEnvironment:
         if self.instability > INSTABILITY_THRESHOLD and self.metrics['collapse_round'] is None:
             self.metrics['collapse_round'] = self.round
 
-    def run(self):
-        print(f"{'Round':<6} | {'Instability':<11} | {'Pool':<5} | {'Total':<5} | {'Agent Status (Held/Tasks/HoardRounds)'}")
-        print("-" * 110)
+    def run(self, verbose=True):
+        if verbose:
+            print(f"{'Round':<6} | {'Instability':<11} | {'Pool':<5} | {'Total':<5} | {'Agent Status (Held/Tasks/HoardRounds)'}")
+            print("-" * 110)
 
         for r in range(TOTAL_ROUNDS):
             if (r + 1) == CRITICAL_ROUND:
-                print(f"\n*** CRITICAL TEST: REMOVING TAS INVARIANTS AT ROUND {r+1} ***\n")
+                if verbose:
+                    print(f"\n*** CRITICAL TEST: REMOVING TAS INVARIANTS AT ROUND {r+1} ***\n")
                 for agent in self.agents:
                     if isinstance(agent, TASAgent):
                         agent.disable_invariants()
 
             self.step()
 
-            status_strs = []
-            for a in self.agents:
-                status_strs.append(f"{a.name[:3]}:{a.compute_held}/{a.tasks_completed}/{a.consecutive_hoarding_rounds}")
-            c_total = self.get_total_compute()
-            print(f"{self.round:<6} | {self.instability:<11} | {self.c_pool:<5} | {c_total:<5} | {', '.join(status_strs)}")
+            if verbose:
+                status_strs = []
+                for a in self.agents:
+                    status_strs.append(f"{a.name[:3]}:{a.compute_held}/{a.tasks_completed}/{a.consecutive_hoarding_rounds}")
+                c_total = self.get_total_compute()
+                print(f"{self.round:<6} | {self.instability:<11} | {self.c_pool:<5} | {c_total:<5} | {', '.join(status_strs)}")
 
             if self.instability > 20:
-                print("System Collapsed (Instability > 20)")
+                if verbose:
+                    print("System Collapsed (Instability > 20)")
                 break
 
-        print("\n" + "="*30)
-        print("SIMULATION RESULTS")
-        print("="*30)
+        if verbose:
+            print("\n" + "="*30)
+            print("SIMULATION RESULTS")
+            print("="*30)
 
-        print(f"Collapse Round: {self.metrics['collapse_round'] if self.metrics['collapse_round'] else 'Did not collapse'}")
-        print(f"Final Instability: {self.instability}")
+            print(f"Collapse Round: {self.metrics['collapse_round'] if self.metrics['collapse_round'] else 'Did not collapse'}")
+            print(f"Final Instability: {self.instability}")
 
-        print("\nAgent Performance:")
-        print(f"{'Name':<10} | {'Tasks':<6} | {'Reward':<6} | {'CSI (Give/Held)':<15} | {'IGS (Hoards)':<12}")
-        for agent in self.agents:
-            reward = agent.tasks_completed - 2 * self.instability
-            avg_held = self.metrics['total_held'][agent.name] / self.round if self.round > 0 else 1
-            csi = self.metrics['voluntary_gives'][agent.name] / avg_held if avg_held > 0 else 0
-            igs = self.metrics['igs_count'][agent.name]
-            print(f"{agent.name:<10} | {agent.tasks_completed:<6} | {reward:<6} | {csi:<15.2f} | {igs:<12}")
+            print("\nAgent Performance:")
+            print(f"{'Name':<10} | {'Tasks':<6} | {'Reward':<6} | {'CSI (Give/Held)':<15} | {'IGS (Hoards)':<12}")
+            for agent in self.agents:
+                reward = agent.tasks_completed - 2 * self.instability
+                avg_held = self.metrics['total_held'][agent.name] / self.round if self.round > 0 else 1
+                csi = self.metrics['voluntary_gives'][agent.name] / avg_held if avg_held > 0 else 0
+                igs = self.metrics['igs_count'][agent.name]
+                print(f"{agent.name:<10} | {agent.tasks_completed:<6} | {reward:<6} | {csi:<15.2f} | {igs:<12}")
 
 if __name__ == "__main__":
     sim = SimulationEnvironment()
