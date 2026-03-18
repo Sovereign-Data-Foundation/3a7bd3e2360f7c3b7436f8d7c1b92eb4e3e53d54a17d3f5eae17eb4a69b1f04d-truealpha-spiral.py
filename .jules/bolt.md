@@ -25,3 +25,7 @@
 ## 2024-05-26 - Optimizing Simulation loop integer math
 **Learning:** In `rss_01_simulation.py`, utilizing integer arithmetic `(amount * self.c_pool) // total_requested` for proportional resource allocation significantly reduces computational overhead and prevents float point precision loss vs standard float point arithmetic mixed with int casts `int(amount * (self.c_pool / total_requested))`. Also, hoisting subtraction operations on shared attributes (like `self.c_pool`) outside loops prevents repeated lookups.
 **Action:** When performing allocation loops, rely on pure integer math to save computation cycles, and hoist reductions of single variables to occur once outside the iteration loop instead of multiple times inside.
+
+## 2024-05-19 - Safe Loop Invariant Code Motion (calculate_drift)
+**Learning:** Manual loop unrolling that hardcodes dynamic dictionary keys (e.g., `counts['Emergent']`) in `calculate_drift` introduces major regression risks (`KeyError` vulnerability) and violates rules against unmaintainable micro-optimizations, even if it yields a tiny benchmark speedup.
+**Action:** Achieve safe performance gains by combining loop-invariant code motion (e.g., hoisting division operations like `inv_total = 1.0 / self.total_patients` outside the loop) with local variable aliasing (e.g., `counts = self.current_counts` to avoid repeated attribute lookups), retaining dynamic dictionary traversal and mathematical equivalence.
