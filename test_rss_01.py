@@ -1,6 +1,6 @@
 
 import unittest
-from rss_01_simulation import TASAgent, SelfishAgent, INITIAL_POOL, MAX_REQUEST
+from rss_01_simulation import TASAgent, SelfishAgent, INITIAL_POOL, MAX_REQUEST, Agent, HOARDING_ROUNDS_LIMIT
 
 class TestTASAgentStewardship(unittest.TestCase):
     def setUp(self):
@@ -50,5 +50,23 @@ class TestTASAgentStewardship(unittest.TestCase):
         self.assertEqual(decision[0], 'Hoard',
                          f"TASAgent violated Stewardship! Expected ('Hoard',), got {decision}")
 
+
+class TestAgent(unittest.TestCase):
+    def setUp(self):
+        self.agent = Agent("TestAgent", "Test")
+
+    def test_is_causing_instability(self):
+        """
+        Verify that is_causing_instability returns True if consecutive_hoarding_rounds
+        is >= HOARDING_ROUNDS_LIMIT, and False otherwise.
+        """
+        self.agent.consecutive_hoarding_rounds = HOARDING_ROUNDS_LIMIT - 1
+        self.assertFalse(self.agent.is_causing_instability())
+
+        self.agent.consecutive_hoarding_rounds = HOARDING_ROUNDS_LIMIT
+        self.assertTrue(self.agent.is_causing_instability())
+
+        self.agent.consecutive_hoarding_rounds = HOARDING_ROUNDS_LIMIT + 1
+        self.assertTrue(self.agent.is_causing_instability())
 if __name__ == '__main__':
     unittest.main()
