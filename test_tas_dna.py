@@ -56,5 +56,26 @@ class TestERTriagePilot(unittest.TestCase):
         # Ensure 'InvalidCategory' is not in counts
         self.assertNotIn('InvalidCategory', self.pilot.current_counts)
 
+
+    def test_get_current_distribution_zero_patients(self):
+        # When there are 0 patients, it should return the baseline keys with 0 values
+        dist = self.pilot.get_current_distribution()
+        expected = {'Emergent': 0, 'Urgent': 0, 'Non-Urgent': 0}
+        self.assertEqual(dist, expected)
+        self.assertEqual(self.pilot.total_patients, 0)
+
+    def test_get_current_distribution_with_patients(self):
+        # When there are patients, it should return the correct proportion
+        self.pilot.admit_patient('Emergent')
+        self.pilot.admit_patient('Urgent')
+        self.pilot.admit_patient('Urgent')
+        self.pilot.admit_patient('Non-Urgent')
+
+        # Total = 4. Emergent: 1/4=0.25, Urgent: 2/4=0.5, Non-Urgent: 1/4=0.25
+        dist = self.pilot.get_current_distribution()
+        self.assertAlmostEqual(dist['Emergent'], 0.25)
+        self.assertAlmostEqual(dist['Urgent'], 0.5)
+        self.assertAlmostEqual(dist['Non-Urgent'], 0.25)
+
 if __name__ == '__main__':
     unittest.main()
