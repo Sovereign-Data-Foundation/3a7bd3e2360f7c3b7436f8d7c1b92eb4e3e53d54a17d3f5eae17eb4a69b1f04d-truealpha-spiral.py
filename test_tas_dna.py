@@ -56,5 +56,11 @@ class TestERTriagePilot(unittest.TestCase):
         # Ensure 'InvalidCategory' is not in counts
         self.assertNotIn('InvalidCategory', self.pilot.current_counts)
 
+    def test_calculate_drift_zero_patients(self):
+        # Test calculating drift when there are zero patients
+        # Just calling it immediately after init should return 0.0
+        drift = self.pilot.calculate_drift()
+        self.assertAlmostEqual(drift, 0.0)
+
 if __name__ == '__main__':
     unittest.main()
