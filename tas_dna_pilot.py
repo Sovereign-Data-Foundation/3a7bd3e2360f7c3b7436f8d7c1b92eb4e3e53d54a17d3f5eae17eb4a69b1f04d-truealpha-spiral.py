@@ -38,15 +38,17 @@ class ERTriagePilot:
         the current distribution and the baseline.
         TVD(P, Q) = 0.5 * sum(|P(x) - Q(x)|)
         """
-        if self.total_patients == 0:
+        total = self.total_patients
+        if total == 0:
             return 0.0
+
+        counts = self.current_counts
 
         # TVD = 0.5 * sum(|P(x) - Q(x)|)
         l1_distance = 0.0
         for category, baseline_prob in self.baseline.items():
-            # Optimized: Direct dict access is faster than .get()
-            current_prob = self.current_counts[category] / self.total_patients
-            l1_distance += abs(current_prob - baseline_prob)
+            # Optimized: Local aliasing of instance attributes prevents repeated lookups
+            l1_distance += abs(counts[category] / total - baseline_prob)
 
         return 0.5 * l1_distance
 

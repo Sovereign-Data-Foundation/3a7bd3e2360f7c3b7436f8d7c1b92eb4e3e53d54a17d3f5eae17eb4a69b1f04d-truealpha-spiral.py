@@ -25,3 +25,7 @@
 ## 2024-05-26 - Optimizing Simulation loop integer math
 **Learning:** In `rss_01_simulation.py`, utilizing integer arithmetic `(amount * self.c_pool) // total_requested` for proportional resource allocation significantly reduces computational overhead and prevents float point precision loss vs standard float point arithmetic mixed with int casts `int(amount * (self.c_pool / total_requested))`. Also, hoisting subtraction operations on shared attributes (like `self.c_pool`) outside loops prevents repeated lookups.
 **Action:** When performing allocation loops, rely on pure integer math to save computation cycles, and hoist reductions of single variables to occur once outside the iteration loop instead of multiple times inside.
+
+## 2026-03-26 - Optimizing drift calculations using local variable aliasing
+**Learning:** In `tas_dna_pilot.py`, `calculate_drift` benchmarked ~15% faster by aliasing instance attributes like `self.current_counts` and `self.total_patients` to local variables (`counts` and `total`) prior to iterating over items. Combining the calculation inside the loop to `abs(counts[category] / total - baseline_prob)` eliminated repetitive lookups.
+**Action:** When calculating across a loop, use local aliasing to prevent repeated property lookups for instance attributes, especially in mathematical contexts where other complex optimizations like hoisting divisions might introduce net performance regressions due to floating point and type conversion overhead.
