@@ -27,7 +27,7 @@ def airlock_gate(coherence, resonance):
     else:
         cost = (1.0 - coherence) * math.exp(resonance)
 
-    if cost > MAX_ENERGY_COST:
+    if math.isnan(cost) or cost > MAX_ENERGY_COST:
         return AIRLOCK_DENIED_ENERGY_COST_TOO_HIGH, cost
 
     return AIRLOCK_PASSED, cost
