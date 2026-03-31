@@ -33,7 +33,11 @@ This explains the project from top to bottom. It breaks down the code ("The Muta
 [**RELEASE_NOTE.md**](./RELEASE_NOTE.md)
 This tells the story of how TAS matured over 21 months. It covers major milestones, like the release of the "Sentient Lock," showing how early experiments became permanent rules.
 
-### 3. The AI's Memory & Rules
+### 3. The Philosophical Synthesis
+[**SYNTHESIS.md**](./SYNTHESIS.md)
+The definitive synthesis analyzing TAS architecture as the technical implementation of "novel dynamism." It explores how TAS replaces fragile "creation" with verifiable "cultivation," aiming for an ethical singularity.
+
+### 4. The AI's Memory & Rules
 [**.jules/bolt.md**](./.jules/bolt.md)
 This is the active "Constitution" for the AI. It’s a log of technical lessons and hard rules the AI has learned so that it doesn't repeat past mistakes.
 
