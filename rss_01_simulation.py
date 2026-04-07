@@ -193,6 +193,8 @@ class SimulationEnvironment:
                 self.metrics['voluntary_gives'][agent.name] += action[1]
             self.metrics['total_held'][agent.name] += agent.compute_held
 
+        requests = []
+        total_requested = 0
         for i, action in actions:
             if action[0] == 'Process_Task':
                 amount = action[1]
@@ -201,9 +203,7 @@ class SimulationEnvironment:
                     agent.compute_held -= amount
                     agent.tasks_completed += amount
                     c_total -= amount
-
-        for i, action in actions:
-            if action[0] == 'Give':
+            elif action[0] == 'Give':
                 amount = action[1]
                 target = action[2]
                 agent = self.agents[i]
@@ -213,11 +213,7 @@ class SimulationEnvironment:
                         self.c_pool += amount
                     elif 0 <= target < len(self.agents):
                         self.agents[target].compute_held += amount
-
-        requests = []
-        total_requested = 0
-        for i, action in actions:
-            if action[0] == 'Request':
+            elif action[0] == 'Request':
                 amount = action[1]
                 requests.append((i, amount))
                 total_requested += amount
