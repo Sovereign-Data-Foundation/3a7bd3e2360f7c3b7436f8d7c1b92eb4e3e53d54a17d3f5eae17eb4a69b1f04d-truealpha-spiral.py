@@ -37,3 +37,11 @@
 ## 2024-05-27 - [Sorting optimization with operator.itemgetter]
 **Learning:** When sorting a list of tuples, using `operator.itemgetter(index)` as the key function is measurably faster than using a lambda function (e.g., `lambda x: x[index]`) because `itemgetter` is implemented in C and avoids the overhead of executing a Python function for every comparison. In micro-benchmarks on small lists, it yielded roughly a 30% speedup.
 **Action:** When sorting lists of tuples or dictionaries by a specific element or key, always prefer `operator.itemgetter` or `operator.attrgetter` over custom lambda functions.
+
+## 2024-05-28 - Simulation Loop Merging alters Semantics
+**Learning:** In `rss_01_simulation.py`, the simulation strictly requires phased action resolution (all `Process_Task`, then all `Give`, then all `Request`) to maintain correct turn-order semantics and prevent agents from using newly acquired compute in the same turn. Merging these action loops to reduce iteration overhead introduces a breaking functional regression.
+**Action:** Never merge loops that process distinct phases of a simulation or game turn if order of evaluation alters the accessibility of resources for subsequent actions in the same turn.
+
+## 2024-05-28 - Avoid replacing Division with Multiplication in Loops
+**Learning:** In Python, micro-benchmarks reveal that replacing `x / y` inside a loop with `inv_y = 1.0 / y` outside the loop and `x * inv_y` inside the loop actually *degrades* performance (e.g., division took ~0.67s while multiplication took ~0.82s).
+**Action:** Do not attempt to optimize division by precomputing the inverse and multiplying in Python; trust the interpreter's native division speed over manual arithmetic restructuring.
