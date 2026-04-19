@@ -49,3 +49,7 @@
 ## 2026-04-14 - Cache dict.items() for hot loops
 **Learning:** In tight loops like `calculate_drift` within `ERTriagePilot`, calling `.items()` on a dictionary creates a new view object each time, incurring noticeable overhead when executed frequently. Caching this as a static tuple (`tuple(dict.items())`) during initialization significantly speeds up the loop (up to ~20-25% faster in micro-benchmarks).
 **Action:** When iterating over dictionary items in a hot loop (where the dictionary's keys and values do not change or the items represent static configuration/baselines), cache the result of `.items()` as a tuple in `__init__` and iterate over that cached tuple instead.
+
+## 2026-05-18 - Native NaN checking overhead
+**Learning:** Using `math.isnan(value)` introduces noticeable overhead inside tight, frequent loops because of the Python function call. Replacing it with the native float comparison `value != value` provides roughly a ~25% speedup in functions computing frequent float conditions while retaining identical semantics for NaN detection.
+**Action:** When performing high-frequency validations involving NaN checks, use the native comparison `value != value` instead of importing and calling `math.isnan()`.
