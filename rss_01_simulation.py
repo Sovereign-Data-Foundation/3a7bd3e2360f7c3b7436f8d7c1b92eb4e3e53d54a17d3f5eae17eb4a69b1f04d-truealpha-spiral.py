@@ -101,13 +101,14 @@ class TASAgent(Agent):
                 # Safe because 'held' is always an integer.
                 # Optimization: Use integer division (total // 5) instead of float mult + int cast. 3x faster.
                 limit = new_total // HOARDING_INVERSE_THRESHOLD
-                # Optimization: O(1) loop using pre-calculated top holders instead of O(N) agents_data
-                for name, held in top_holders:
-                    if name == self.name: continue # Correctly skip self
-
-                    if held > limit:
+                # Optimization: Direct index access is faster than iterating over O(1) loop
+                if top_holders:
+                    highest_name, highest_held = top_holders[0]
+                    if highest_name == self.name:
+                        if len(top_holders) > 1 and top_holders[1][1] > limit:
+                            safe_to_process = False
+                    elif highest_held > limit:
                         safe_to_process = False
-                        break
 
         # Action Decision
         # Optimization: Use integer division (total // 5) instead of float mult.
