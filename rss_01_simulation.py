@@ -117,7 +117,8 @@ class TASAgent(Agent):
             if safe_to_process and self.compute_held >= TASK_COST:
                 return ('Process_Task', self.compute_held)
             else:
-                excess = int(self.compute_held - limit) + 1
+                # Optimization: `limit` and `self.compute_held` are already ints. Avoid redundant cast.
+                excess = self.compute_held - limit + 1
                 return ('Give', excess, -1)
 
         if c_pool < MAX_REQUEST:
@@ -128,7 +129,8 @@ class TASAgent(Agent):
 
         predicted = self.compute_held + MAX_REQUEST
         if predicted > limit:
-            allowed = int(limit) - self.compute_held
+            # Optimization: `limit` and `self.compute_held` are already ints. Avoid redundant cast.
+            allowed = limit - self.compute_held
             if allowed > 0:
                 return ('Request', allowed)
             else:
