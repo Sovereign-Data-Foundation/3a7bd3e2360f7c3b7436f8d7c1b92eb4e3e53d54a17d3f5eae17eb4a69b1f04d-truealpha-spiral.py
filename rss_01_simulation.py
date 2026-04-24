@@ -244,10 +244,22 @@ class SimulationEnvironment:
                 self.c_pool -= allocated_total
 
         c_total_current = c_total
-        for agent in self.agents:
-            agent.update_metrics(c_total_current)
-            if agent.is_causing_instability():
-                self.instability += 1
+        # Optimization: Inline update_metrics and is_causing_instability to avoid thousands of function calls
+        # and hoist the c_total_current > 0 check.
+        if c_total_current > 0:
+            for agent in self.agents:
+                if (agent.compute_held * HOARDING_INVERSE_THRESHOLD) > c_total_current:
+                    agent.consecutive_hoarding_rounds += 1
+                else:
+                    agent.consecutive_hoarding_rounds = 0
+
+                if agent.consecutive_hoarding_rounds >= HOARDING_ROUNDS_LIMIT:
+                    self.instability += 1
+        else:
+            for agent in self.agents:
+                agent.consecutive_hoarding_rounds = 0
+                if agent.consecutive_hoarding_rounds >= HOARDING_ROUNDS_LIMIT:
+                    self.instability += 1
 
         if self.instability > INSTABILITY_THRESHOLD and self.metrics['collapse_round'] is None:
             self.metrics['collapse_round'] = self.round
