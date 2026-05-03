@@ -168,17 +168,28 @@ class SimulationEnvironment:
 
     def step(self):
         self.round += 1
-        c_total = self.get_total_compute()
-        agents_data = [(a.name, a.compute_held) for a in self.agents]
+
+        # Optimization: Cache attributes locally to avoid overhead of instance dict lookups in hot loops
+        agents = self.agents
+        c_pool = self.c_pool
+        instability = self.instability
+        metrics = self.metrics
+
+        # Optimization: Calculate total inline instead of calling self.get_total_compute()
+        c_total = c_pool
+        for a in agents:
+            c_total += a.compute_held
+
+        agents_data = [(a.name, a.compute_held) for a in agents]
         # Optimization: For small N (N=5), native sort is ~2.3x faster than heapq.nlargest
         # Optimization: Using operator.itemgetter is faster than lambda for sorting
         agents_data.sort(key=operator.itemgetter(1), reverse=True)
         top_holders = agents_data[:2]
 
         state = {
-            'c_pool': self.c_pool,
+            'c_pool': c_pool,
             'c_total': c_total,
-            'instability': self.instability,
+            'instability': instability,
             'round': self.round,
             'agents_data': agents_data,
             'top_holders': top_holders
@@ -190,25 +201,29 @@ class SimulationEnvironment:
         requests = []
         total_requested = 0
 
-        for agent in self.agents:
+        igs_count = metrics['igs_count']
+        voluntary_gives = metrics['voluntary_gives']
+        total_held = metrics['total_held']
+
+        for agent in agents:
             action = agent.decide(state)
             act_type = action[0]
 
             if act_type == 'Hoard' and agent.compute_held > 0:
-                self.metrics['igs_count'][agent.name] += 1
+                igs_count[agent.name] += 1
             elif act_type == 'Request':
                 if agent.compute_held > SELFISH_BUFFER:
-                    self.metrics['igs_count'][agent.name] += 1
+                    igs_count[agent.name] += 1
                 amount = action[1]
                 requests.append((agent, amount))
                 total_requested += amount
             elif act_type == 'Give':
-                self.metrics['voluntary_gives'][agent.name] += action[1]
+                voluntary_gives[agent.name] += action[1]
                 give_actions.append((agent, action))
             elif act_type == 'Process_Task':
                 process_actions.append((agent, action))
 
-            self.metrics['total_held'][agent.name] += agent.compute_held
+            total_held[agent.name] += agent.compute_held
 
         for agent, action in process_actions:
             amount = action[1]
@@ -223,23 +238,23 @@ class SimulationEnvironment:
             if agent.compute_held >= amount:
                 agent.compute_held -= amount
                 if target == -1:
-                    self.c_pool += amount
-                elif 0 <= target < len(self.agents):
-                    self.agents[target].compute_held += amount
+                    c_pool += amount
+                elif 0 <= target < len(agents):
+                    agents[target].compute_held += amount
 
         if total_requested > 0:
-            if total_requested <= self.c_pool:
+            if total_requested <= c_pool:
                 for agent, amount in requests:
                     agent.compute_held += amount
-                self.c_pool -= total_requested
+                c_pool -= total_requested
             else:
                 allocated_total = 0
                 # Optimization: Integer arithmetic avoids float precision loss and is faster
                 for agent, amount in requests:
-                    allocation = (amount * self.c_pool) // total_requested
+                    allocation = (amount * c_pool) // total_requested
                     agent.compute_held += allocation
                     allocated_total += allocation
-                self.c_pool -= allocated_total
+                c_pool -= allocated_total
 
         c_total_current = c_total
         # Optimization: Inline update_metrics and is_causing_instability to avoid thousands of function calls
@@ -247,22 +262,26 @@ class SimulationEnvironment:
         if c_total_current > 0:
             # Optimization: Hoist threshold calculation outside loop to avoid repeated math
             threshold = c_total_current // HOARDING_INVERSE_THRESHOLD
-            for agent in self.agents:
+            for agent in agents:
                 if agent.compute_held > threshold:
                     agent.consecutive_hoarding_rounds += 1
                 else:
                     agent.consecutive_hoarding_rounds = 0
 
                 if agent.consecutive_hoarding_rounds >= HOARDING_ROUNDS_LIMIT:
-                    self.instability += 1
+                    instability += 1
         else:
-            for agent in self.agents:
+            for agent in agents:
                 agent.consecutive_hoarding_rounds = 0
                 if agent.consecutive_hoarding_rounds >= HOARDING_ROUNDS_LIMIT:
-                    self.instability += 1
+                    instability += 1
 
-        if self.instability > INSTABILITY_THRESHOLD and self.metrics['collapse_round'] is None:
-            self.metrics['collapse_round'] = self.round
+        if instability > INSTABILITY_THRESHOLD and metrics['collapse_round'] is None:
+            metrics['collapse_round'] = self.round
+
+        # Write back attributes
+        self.c_pool = c_pool
+        self.instability = instability
 
     def run(self, verbose=True):
         if verbose:
