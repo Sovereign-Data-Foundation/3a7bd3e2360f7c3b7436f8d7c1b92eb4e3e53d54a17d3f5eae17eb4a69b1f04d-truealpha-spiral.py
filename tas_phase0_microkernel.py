@@ -215,16 +215,22 @@ def guard_accepts_token(token: Dict[str, Any] | None, signing_key: str, used_cou
     """Reference external guard check for signed one-shot tokens."""
     if not token:
         return False
-    signature = token.get("signature")
-    unsigned = dict(token)
-    unsigned.pop("signature", None)
-    if signature != sign_payload(unsigned, signing_key):
-        return False
+
+    # Optimization: Check cheap logical preconditions (O(1) lookups) before
+    # expensive cryptographic signature validation to early-return on replayed
+    # or invalid tokens.
     if not token.get("one_shot"):
         return False
     counter = token.get("counter")
     if counter in used_counters:
         return False
+
+    signature = token.get("signature")
+    unsigned = dict(token)
+    unsigned.pop("signature", None)
+    if signature != sign_payload(unsigned, signing_key):
+        return False
+
     used_counters.add(counter)
     return True
 

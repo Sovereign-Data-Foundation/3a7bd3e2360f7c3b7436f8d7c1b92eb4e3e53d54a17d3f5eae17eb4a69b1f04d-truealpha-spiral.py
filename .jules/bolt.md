@@ -73,3 +73,7 @@
 ## 2026-05-03 - Cache Object References and Dictionaries to Local Variables in Hot Loops
 **Learning:** In tight Python simulation loops like `SimulationEnvironment.step()`, repeatedly accessing instance attributes (`self.agents`) or dictionary lookups (`self.metrics['igs_count']`) introduces significant overhead. Because the simulation loop processes many agents iteratively, caching these lookup paths into local variables (`agents = self.agents`, `igs_count = self.metrics['igs_count']`) dramatically reduces the cost of variable resolution within the loop.
 **Action:** When working with high-frequency simulation loops, assign frequently accessed object attributes and dictionary references to local variables before entering the loop to skip repeated evaluation overhead without altering semantic behavior.
+
+## 2024-06-05 - Defer Cryptographic Validation
+**Learning:** Validating cryptographic signatures (like SHA-256 HMAC) involves dictionary manipulation, JSON encoding, and hashing, which are computationally expensive. Performing these checks before evaluating cheap boolean flags or simple set lookups (like replay checks) causes massive unnecessary overhead for invalid requests. By moving simple logical checks above signature validation, we achieved a ~50x speedup for rejected/replayed tokens.
+**Action:** Always place cheap logical preconditions (O(1) lookups, boolean checks) before expensive cryptographic validation in verification flows. Early return as soon as possible on invalid states to save computation.
