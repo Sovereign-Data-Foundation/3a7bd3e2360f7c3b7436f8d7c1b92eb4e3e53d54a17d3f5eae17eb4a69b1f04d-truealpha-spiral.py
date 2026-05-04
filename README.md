@@ -24,6 +24,11 @@ This repository is the diary of a machine learning self-control. It tracks how a
 [**recursive-compensation.mdx**](./architecture/recursive-compensation.mdx)
 Details the economic and civic mandate of TAS. It explores the "process-value claim" of authorship and how recursive systems handle compensation, while anchoring the framework to the August 21, 2026 civic transition.
 
+
+### 6. The Monument Restoration Protocol (ASSP Doctrine)
+[**monument-restoration-protocol.mdx**](./architecture/monument-restoration-protocol.mdx)
+Details the 7-step operational sequence for repairing failing AI architectures (Saul) without total collapse, using ASSP as the computational scaffolding and enforcing the Clean Doctrine of Execution.
+
 ---
 
 ## Dive Deeper (The Documentation Map)
