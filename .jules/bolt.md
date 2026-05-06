@@ -77,3 +77,6 @@
 ## 2024-06-05 - Defer Cryptographic Validation
 **Learning:** Validating cryptographic signatures (like SHA-256 HMAC) involves dictionary manipulation, JSON encoding, and hashing, which are computationally expensive. Performing these checks before evaluating cheap boolean flags or simple set lookups (like replay checks) causes massive unnecessary overhead for invalid requests. By moving simple logical checks above signature validation, we achieved a ~50x speedup for rejected/replayed tokens.
 **Action:** Always place cheap logical preconditions (O(1) lookups, boolean checks) before expensive cryptographic validation in verification flows. Early return as soon as possible on invalid states to save computation.
+## 2024-05-30 - Avoid Function Local Imports on Hot Paths
+**Learning:** In Python, importing a module (e.g., `import math`) inside a function that is called frequently on a hot path introduces unnecessary overhead because the interpreter must check `sys.modules` on every invocation. Moving the import to the module level avoids this per-call lookup cost.
+**Action:** When optimizing tight loops or frequently called functions, hoist any local imports to the top of the file unless there is a specific reason (like avoiding circular imports or lazy loading a heavy, rarely used module) not to.

@@ -6,6 +6,8 @@ source, scope, lineage, authority, and admissibility.
 """
 
 from typing import Dict, Any, Tuple
+# Optimization: Hoisted import math to module level to avoid function local import overhead on every call
+import math
 
 EHO_PASSED = "EHO_ADMISSIBLE"
 EHO_DENIED_DRIFT_TOO_HIGH = "EHO_INADMISSIBLE_DRIFT"
@@ -42,7 +44,6 @@ class EthicalHamiltonian:
         if coherence >= 1.0:
             return prior_drift
 
-        import math
         current_error = (1.0 - coherence) * math.exp(min(resonance, 50.0)) # cap resonance to avoid overflow here
         return prior_drift + (current_error * (1.0 + prior_drift))
 
