@@ -63,3 +63,11 @@ For developers, TAS implements a rigorous, self-correcting safety perimeter arou
 ```bash
 python3 ci_gatekeeper.py
 ```
+
+
+## 5-Step Demo
+1. Run `python3 verify.py claims/claim.json`
+2. Check receipt hashes
+3. Run compute request A -> expect **accept**
+4. Run compute request B (out of scope) -> expect **refusal**
+5. Confirm both receipts are reproducible
