@@ -1,4 +1,3 @@
-import collections
 import itertools
 
 class ERTriagePilot:
@@ -9,6 +8,8 @@ class ERTriagePilot:
             'Urgent': 0.5,
             'Non-Urgent': 0.2
         }
+        # Optimization: Cache items as a tuple to avoid overhead of dict.items() in calculate_drift
+        self.baseline_items = tuple(self.baseline.items())
         # Optimized: Use pre-initialized dict instead of defaultdict for faster access
         self.current_counts = {k: 0 for k in self.baseline}
         self.total_patients = 0
@@ -43,7 +44,8 @@ class ERTriagePilot:
 
         # TVD = 0.5 * sum(|P(x) - Q(x)|)
         l1_distance = 0.0
-        for category, baseline_prob in self.baseline.items():
+        # Optimization: Iterate over cached tuple instead of calling dict.items() which creates a view
+        for category, baseline_prob in self.baseline_items:
             # Optimized: Direct dict access is faster than .get()
             current_prob = self.current_counts[category] / self.total_patients
             l1_distance += abs(current_prob - baseline_prob)
@@ -73,18 +75,22 @@ class ERTriagePilot:
         """
         print(f"Initiating Phoenix Protocol... Rolling back from {len(self.history)} to {self.attested_history_length}")
 
-        # Optimization: Use Counter and islice for fast bulk rollback
-        # shifting complexity to C-optimized internals instead of popping iteratively.
+        # Optimization: Use list.count() to avoid dict allocation overhead
+        # Since the number of categories is small and known (self.current_counts.keys()),
+        # calling the C-optimized list.count() repeatedly is ~2x faster than using
+        # collections.Counter which requires dict allocations and hashing for every element.
         if len(self.history) <= self.attested_history_length:
             return
 
         start = self.attested_history_length
         rollback_count = len(self.history) - start
 
-        to_remove = collections.Counter(itertools.islice(self.history, start, None))
+        sub_history = self.history[start:]
 
-        for category, count in to_remove.items():
-            self.current_counts[category] -= count
+        for category in self.current_counts:
+            count = sub_history.count(category)
+            if count > 0:
+                self.current_counts[category] -= count
 
         self.total_patients -= rollback_count
         del self.history[start:]

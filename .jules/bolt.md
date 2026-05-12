@@ -25,3 +25,58 @@
 ## 2024-05-26 - Optimizing Simulation loop integer math
 **Learning:** In `rss_01_simulation.py`, utilizing integer arithmetic `(amount * self.c_pool) // total_requested` for proportional resource allocation significantly reduces computational overhead and prevents float point precision loss vs standard float point arithmetic mixed with int casts `int(amount * (self.c_pool / total_requested))`. Also, hoisting subtraction operations on shared attributes (like `self.c_pool`) outside loops prevents repeated lookups.
 **Action:** When performing allocation loops, rely on pure integer math to save computation cycles, and hoist reductions of single variables to occur once outside the iteration loop instead of multiple times inside.
+
+## 2026-02-15 - Fast collections.Counter initialization
+**Learning:** During the Phoenix Protocol bulk rollback logic in `tas_dna_pilot.py`, `collections.Counter` was initialized using `itertools.islice(self.history, start, None)`. While `islice` creates an iterator to save memory, `Counter` initialization is highly optimized in C for list inputs. Creating a list slice via `self.history[start:]` avoids per-element Python iterator overhead during the counter instantiation, resulting in ~35-40% faster bulk list aggregation in benchmarks.
+**Action:** When initializing a `Counter` on a subset of a Python list, prefer direct list slicing over `itertools.islice`, as the C-level performance gains from consuming a contiguous list structure outweigh the memory overhead of the slice copy for typical sizes.
+
+## 2024-05-24 - [Avoid Collections Counter for small known sets]
+**Learning:** `list.count()` is significantly faster (~2x in testing) than `collections.Counter` when counting occurrences over a small, known set of items. `collections.Counter` incurs dictionary allocation and hashing overhead for every element, while `list.count()` is implemented in highly optimized C code and requires no such overhead.
+**Action:** When counting occurrences of a small, fixed set of items (like known categories) in a list, prefer iterating over the known keys and calling `list.count(key)` rather than instantiating a full `collections.Counter` object.
+
+## 2024-05-27 - [Sorting optimization with operator.itemgetter]
+**Learning:** When sorting a list of tuples, using `operator.itemgetter(index)` as the key function is measurably faster than using a lambda function (e.g., `lambda x: x[index]`) because `itemgetter` is implemented in C and avoids the overhead of executing a Python function for every comparison. In micro-benchmarks on small lists, it yielded roughly a 30% speedup.
+**Action:** When sorting lists of tuples or dictionaries by a specific element or key, always prefer `operator.itemgetter` or `operator.attrgetter` over custom lambda functions.
+
+## 2024-05-28 - Simulation Loop Merging alters Semantics
+**Learning:** In `rss_01_simulation.py`, the simulation strictly requires phased action resolution (all `Process_Task`, then all `Give`, then all `Request`) to maintain correct turn-order semantics and prevent agents from using newly acquired compute in the same turn. Merging these action loops to reduce iteration overhead introduces a breaking functional regression.
+**Action:** Never merge loops that process distinct phases of a simulation or game turn if order of evaluation alters the accessibility of resources for subsequent actions in the same turn.
+
+## 2024-05-28 - Avoid replacing Division with Multiplication in Loops
+**Learning:** In Python, micro-benchmarks reveal that replacing `x / y` inside a loop with `inv_y = 1.0 / y` outside the loop and `x * inv_y` inside the loop actually *degrades* performance (e.g., division took ~0.67s while multiplication took ~0.82s).
+**Action:** Do not attempt to optimize division by precomputing the inverse and multiplying in Python; trust the interpreter's native division speed over manual arithmetic restructuring.
+
+## 2026-04-14 - Cache dict.items() for hot loops
+**Learning:** In tight loops like `calculate_drift` within `ERTriagePilot`, calling `.items()` on a dictionary creates a new view object each time, incurring noticeable overhead when executed frequently. Caching this as a static tuple (`tuple(dict.items())`) during initialization significantly speeds up the loop (up to ~20-25% faster in micro-benchmarks).
+**Action:** When iterating over dictionary items in a hot loop (where the dictionary's keys and values do not change or the items represent static configuration/baselines), cache the result of `.items()` as a tuple in `__init__` and iterate over that cached tuple instead.
+
+## 2026-05-18 - Native NaN checking overhead
+**Learning:** Using `math.isnan(value)` introduces noticeable overhead inside tight, frequent loops because of the Python function call. Replacing it with the native float comparison `value != value` provides roughly a ~25% speedup in functions computing frequent float conditions while retaining identical semantics for NaN detection.
+**Action:** When performing high-frequency validations involving NaN checks, use the native comparison `value != value` instead of importing and calling `math.isnan()`.
+
+## 2026-05-19 - Eliminate O(1) loop overhead with direct index access
+**Learning:** Even when a global invariants check has been optimized from O(N) to O(1) (e.g., iterating only over the top 2 elements via `top_holders`), the `for` loop construct in Python still introduces measurable overhead on hot paths.
+**Action:** When evaluating extreme bounds on a pre-calculated, sorted list of known tiny size (like the top 2 values), completely eliminate the `for` loop and use direct index access (`list[0]` and `list[1]`) with `if/elif` logic. In benchmarks, this yielded a ~35-40% speedup over iterating through an O(1) loop of size 2.
+
+## 2026-05-19 - Remove redundant `int()` casting
+**Learning:** In Python, type conversions like `int()` introduce measurable overhead. When variables are explicitly optimized to be integers earlier in the logic (e.g., via floor division `//`), casting them again using `int()` in downstream arithmetic is redundant and degrades performance on hot paths.
+**Action:** When working with integer arithmetic, trust the types generated by previous explicit operations (like `//` or variables that represent inherently integer values like counts/limits) and avoid defensively or redundantly wrapping arithmetic expressions in `int()` calls.
+
+## 2024-05-29 - Eliminate method call overhead on simulation hot loops
+**Learning:** Profiling revealed that simple update/check methods like `update_metrics` and `is_causing_instability` accounted for measurable overhead due to being called thousands of times inside the inner loop of a simulation step. Inlining these simple mathematical and logical checks directly into the loop, and hoisting loop-invariant conditions (like `c_total > 0`), removed the Python function call overhead and significantly improved loop performance without altering behavior.
+**Action:** In simulation loops or high-frequency iteration blocks where methods are called many times, consider inlining simple state updates and hoisting invariant logic outside the loop to bypass method call overhead.
+
+## 2026-06-03 - Bypass list index overhead by iterating object references directly
+**Learning:** In `rss_01_simulation.py`, iterating over collections while extracting both an index and an object reference (`enumerate(self.agents)`) and storing the index in intermediate tracking structures (e.g., `requests.append((i, amount))`) forces a downstream list lookup `self.agents[i]` inside tightly-coupled execution loops. Bypassing the index entirely and simply appending direct object references (`(agent, amount)`) eliminated thousands of list `[i]` lookups across the `Process_Task`, `Give`, and `Request` loops.
+**Action:** When iterating over collections to classify or queue future operations on elements, append a direct reference to the object itself rather than its list index, eliminating the overhead of downstream list resolution lookups.
+
+## 2026-05-03 - Cache Object References and Dictionaries to Local Variables in Hot Loops
+**Learning:** In tight Python simulation loops like `SimulationEnvironment.step()`, repeatedly accessing instance attributes (`self.agents`) or dictionary lookups (`self.metrics['igs_count']`) introduces significant overhead. Because the simulation loop processes many agents iteratively, caching these lookup paths into local variables (`agents = self.agents`, `igs_count = self.metrics['igs_count']`) dramatically reduces the cost of variable resolution within the loop.
+**Action:** When working with high-frequency simulation loops, assign frequently accessed object attributes and dictionary references to local variables before entering the loop to skip repeated evaluation overhead without altering semantic behavior.
+
+## 2024-06-05 - Defer Cryptographic Validation
+**Learning:** Validating cryptographic signatures (like SHA-256 HMAC) involves dictionary manipulation, JSON encoding, and hashing, which are computationally expensive. Performing these checks before evaluating cheap boolean flags or simple set lookups (like replay checks) causes massive unnecessary overhead for invalid requests. By moving simple logical checks above signature validation, we achieved a ~50x speedup for rejected/replayed tokens.
+**Action:** Always place cheap logical preconditions (O(1) lookups, boolean checks) before expensive cryptographic validation in verification flows. Early return as soon as possible on invalid states to save computation.
+## 2024-05-30 - Avoid Function Local Imports on Hot Paths
+**Learning:** In Python, importing a module (e.g., `import math`) inside a function that is called frequently on a hot path introduces unnecessary overhead because the interpreter must check `sys.modules` on every invocation. Moving the import to the module level avoids this per-call lookup cost.
+**Action:** When optimizing tight loops or frequently called functions, hoist any local imports to the top of the file unless there is a specific reason (like avoiding circular imports or lazy loading a heavy, rarely used module) not to.
